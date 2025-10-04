@@ -9,7 +9,7 @@ import SwiftUI
 
 struct WorkoutFiltersView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var selectedPeriod: WorkoutListView.FilterPeriod
+    @Binding var selectedPeriod: Constants.FilterPeriod
     @Binding var selectedCategory: String
     let categories: [String]
     
@@ -17,7 +17,7 @@ struct WorkoutFiltersView: View {
         NavigationView {
             Form {
                 Section("Период") {
-                    ForEach(WorkoutListView.FilterPeriod.allCases, id: \.self) { period in
+                    ForEach(Constants.FilterPeriod.allCases, id: \.self) { period in
                         HStack {
                             Text(period.rawValue)
                             Spacer()
@@ -79,7 +79,7 @@ struct WorkoutFiltersView: View {
 
 #Preview {
     WorkoutFiltersView(
-        selectedPeriod: .constant(WorkoutListView.FilterPeriod.all),
+        selectedPeriod: .constant(Constants.FilterPeriod.all),
         selectedCategory: .constant("Все"),
         categories: ["Все", "Грудь", "Спина", "Ноги"]
     )

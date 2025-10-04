@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import UIKit
 
 struct HomeView: View {
     @ObservedObject var authManager: AuthManager
@@ -28,6 +29,7 @@ struct HomeView: View {
     
     @State private var showingQuickWorkout = false
     @State private var showingAchievements = false
+    @State private var showingAddExercise = false
     
     private var recentWorkouts: [Workout] {
         Array(workouts.prefix(5))
@@ -54,7 +56,15 @@ struct HomeView: View {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     totalSets += Int(detail.sets)
-                    totalWeight += detail.weight * Double(detail.sets)
+                    
+                    // Для кардио считаем минуты, для силовых - вес
+                    if let exerciseCategory = detail.exercise?.category?.lowercased(), exerciseCategory == "кардио" {
+                        // Для кардио считаем "общий объем" как минуты * подходы
+                        totalWeight += Double(detail.reps) * Double(detail.sets)
+                    } else {
+                        // Для силовых упражнений считаем общий вес
+                        totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
+                    }
                 }
             }
         }
@@ -64,41 +74,70 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 24) {
-                    // Красивый заголовок с приветствием
-                    HomeHeaderView(greetingText: greetingText, authManager: authManager)
-                    
-                    // Быстрые действия с карточным дизайном
-                    QuickActionsCardView(authManager: authManager, showingQuickWorkout: $showingQuickWorkout)
-                    
-                    // Статистика недели с улучшенным дизайном
-                    WeeklyStatsCardView(stats: weeklyStats)
-                    
-                    // Сегодняшние тренировки
-                    if !todayWorkouts.isEmpty {
-                        TodaysWorkoutsCardView(workouts: todayWorkouts, authManager: authManager, onDeleteWorkout: deleteWorkout)
+            ZStack {
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        // Красивый заголовок с приветствием
+                        HomeHeaderView(greetingText: greetingText, authManager: authManager)
+                        
+                        // Быстрые действия с карточным дизайном
+                        QuickActionsCardView(authManager: authManager, showingQuickWorkout: $showingQuickWorkout, showingAddExercise: $showingAddExercise)
+                        
+                        // Статистика недели с улучшенным дизайном
+                        WeeklyStatsCardView(stats: weeklyStats)
+                        
+                        // Сегодняшние тренировки
+                        if !todayWorkouts.isEmpty {
+                            TodaysWorkoutsCardView(workouts: todayWorkouts, authManager: authManager, onDeleteWorkout: deleteWorkout)
+                        }
+                        
+                        // Последние тренировки
+                        RecentWorkoutsCardView(workouts: recentWorkouts, authManager: authManager)
+                        
+                        // Достижения
+                        AchievementsCardView(showingAchievements: $showingAchievements)
                     }
-                    
-                    // Последние тренировки
-                    RecentWorkoutsCardView(workouts: recentWorkouts, authManager: authManager)
-                    
-                    // Достижения
-                    AchievementsCardView(showingAchievements: $showingAchievements)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .background(Color(.systemGroupedBackground))
+                .refreshable {
+                    // Обновление данных
+                }
+                
+                // Размытый фон в верхней части с плавным переходом
+                VStack {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .mask(
+                            LinearGradient(
+                                colors: [
+                                    Color.black,
+                                    Color.black.opacity(0.8),
+                                    Color.black.opacity(0.4),
+                                    Color.black.opacity(0.1),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .backgroundExtensionEffect()
+                        .frame(height: 150)
+                        .ignoresSafeArea(.all, edges: .top)
+                    
+                    Spacer()
+                }
             }
-            .background(Color(.systemGroupedBackground))
             .navigationBarHidden(true)
-            .refreshable {
-                // Обновление данных
-            }
             .sheet(isPresented: $showingQuickWorkout) {
                 AddWorkoutView(authManager: authManager)
             }
             .sheet(isPresented: $showingAchievements) {
                 AchievementsView(authManager: authManager)
+            }
+            .sheet(isPresented: $showingAddExercise) {
+                AddExerciseView(authManager: authManager)
             }
         }
     }
@@ -124,8 +163,8 @@ struct HomeView: View {
             do {
                 try viewContext.save()
             } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("Error deleting workout: \(error)")
+                viewContext.rollback()
             }
         }
     }
@@ -139,7 +178,20 @@ struct HomeHeaderView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Верхняя часть с отступом от статус-бара
+            // Иконка приложения и название в верхней части
+            VStack(spacing: 4) {
+                Image(systemName: "dumbbell.fill")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(.blue)
+                    .padding(.top, 25) // Отступ от статус-бара
+                
+                Text("GymLog")
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.blue)
+                    .padding(.bottom, 20) // Увеличил отступ до фона
+            }
+            
+            // Верхняя часть с уменьшенным отступом
             VStack(spacing: 16) {
                 // Заголовок "Главная" и приветствие в одной строке
                 HStack {
@@ -155,13 +207,26 @@ struct HomeHeaderView: View {
                     
                     Spacer()
                     
-                    // Кнопка профиля
+                    // Аватарка профиля
                     Button(action: {
                         showingProfile = true
                     }) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 36, weight: .medium))
-                            .foregroundColor(.blue)
+                        if let avatarData = authManager.currentUser?.avatar,
+                           let uiImage = UIImage(data: avatarData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 40, height: 40)
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.blue, lineWidth: 2)
+                                )
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 40, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -176,7 +241,7 @@ struct HomeHeaderView: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.top, 70) // Больше отступ от статус-бара
+            .padding(.top, 16) // Уменьшенный отступ от иконки приложения
             .padding(.bottom, 28)
             .background(Color(.systemBackground))
             .cornerRadius(20)
@@ -193,6 +258,7 @@ struct HomeHeaderView: View {
 struct QuickActionsCardView: View {
     @ObservedObject var authManager: AuthManager
     @Binding var showingQuickWorkout: Bool
+    @Binding var showingAddExercise: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -209,16 +275,13 @@ struct QuickActionsCardView: View {
                     action: { showingQuickWorkout = true }
                 )
                 
-                NavigationLink(destination: ExerciseListView(authManager: authManager)) {
-                    QuickActionButton(
-                        icon: "list.bullet",
-                        title: "Упражнения",
-                        subtitle: "Библиотека",
-                        color: .green,
-                        action: {}
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+                QuickActionButton(
+                    icon: "plus.circle.fill",
+                    title: "Новое упражнение",
+                    subtitle: "Добавить",
+                    color: .green,
+                    action: { showingAddExercise = true }
+                )
             }
         }
         .padding(20)

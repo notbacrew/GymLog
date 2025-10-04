@@ -17,6 +17,8 @@ struct AddWorkoutView: View {
     @State private var notes = ""
     @State private var selectedExercises: Set<Exercise> = []
     @State private var showingExercisePicker = false
+    @State private var showingAddWorkoutDetail = false
+    @State private var selectedExerciseForDetail: Exercise?
     
     @FetchRequest private var workoutDetails: FetchedResults<WorkoutDetail>
     
@@ -55,10 +57,10 @@ struct AddWorkoutView: View {
                 Section("Упражнения") {
                     // Показываем добавленные упражнения с деталями
                     ForEach(currentWorkoutDetails, id: \.id) { detail in
-                            NavigationLink(destination: AddWorkoutDetailView(authManager: authManager, exercise: detail.exercise!, workoutDate: workoutDate, onExerciseAdded: {
-                                // Удаляем упражнение из selectedExercises после добавления деталей
-                                selectedExercises.remove(detail.exercise!)
-                            })) {
+                            Button(action: {
+                                selectedExerciseForDetail = detail.exercise
+                                showingAddWorkoutDetail = true
+                            }) {
                             HStack {
                                 if let imageData = detail.exercise?.image,
                                    let uiImage = UIImage(data: imageData) {
@@ -102,16 +104,22 @@ struct AddWorkoutView: View {
                                 }
                             }
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("Удалить") {
+                                deleteExerciseWithDetails(detail)
+                            }
+                            .tint(.red)
+                        }
                     }
                     
                     // Показываем выбранные упражнения без деталей
                     ForEach(Array(selectedExercises), id: \.id) { exercise in
                         // Проверяем, не добавлено ли уже это упражнение
                         if !currentWorkoutDetails.contains(where: { $0.exercise == exercise }) {
-                            NavigationLink(destination: AddWorkoutDetailView(authManager: authManager, exercise: exercise, workoutDate: workoutDate, onExerciseAdded: {
-                                // Удаляем упражнение из selectedExercises после добавления деталей
-                                selectedExercises.remove(exercise)
-                            })) {
+                            Button(action: {
+                                selectedExerciseForDetail = exercise
+                                showingAddWorkoutDetail = true
+                            }) {
                                 HStack {
                                     if let imageData = exercise.image,
                                        let uiImage = UIImage(data: imageData) {
@@ -148,6 +156,12 @@ struct AddWorkoutView: View {
                                         .foregroundColor(.blue)
                                 }
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Удалить") {
+                                    selectedExercises.remove(exercise)
+                                }
+                                .tint(.red)
+                            }
                         }
                     }
                     
@@ -158,7 +172,7 @@ struct AddWorkoutView: View {
                 }
             }
             .navigationTitle("Новая тренировка")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Отмена") {
@@ -170,11 +184,38 @@ struct AddWorkoutView: View {
                     Button("Сохранить") {
                         saveWorkout()
                     }
-                    .disabled(selectedExercises.isEmpty)
+                    .disabled(currentWorkoutDetails.isEmpty)
                 }
             }
             .sheet(isPresented: $showingExercisePicker) {
                 ExercisePickerView(authManager: authManager, selectedExercises: $selectedExercises)
+            }
+            .sheet(isPresented: $showingAddWorkoutDetail) {
+                if let exercise = selectedExerciseForDetail {
+                    AddWorkoutDetailView(
+                        authManager: authManager,
+                        exercise: exercise,
+                        workoutDate: workoutDate,
+                        onExerciseAdded: {
+                            // Удаляем упражнение из selectedExercises после добавления деталей
+                            selectedExercises.remove(exercise)
+                        }
+                    )
+                }
+            }
+        }
+    }
+    
+    private func deleteExerciseWithDetails(_ detail: WorkoutDetail) {
+        withAnimation {
+            viewContext.delete(detail)
+            
+            do {
+                try viewContext.save()
+            } catch {
+                print("Error deleting exercise detail: \(error)")
+                // Восстанавливаем объект в случае ошибки
+                viewContext.rollback()
             }
         }
     }
@@ -214,8 +255,9 @@ struct AddWorkoutView: View {
                 try viewContext.save()
                 dismiss()
             } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("Error saving workout: \(error)")
+                // Восстанавливаем объект в случае ошибки
+                viewContext.rollback()
             }
         }
     }

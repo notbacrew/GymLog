@@ -233,7 +233,15 @@ class AuthManager: ObservableObject {
                 if let details = workout.details?.allObjects as? [WorkoutDetail] {
                     for detail in details {
                         totalSets += Int(detail.sets)
-                        totalWeight += detail.weight * Double(detail.sets)
+                        
+                        // Для кардио считаем минуты, для силовых - вес
+                        if let exerciseCategory = detail.exercise?.category?.lowercased(), exerciseCategory == "кардио" {
+                            // Для кардио считаем "общий объем" как минуты * подходы
+                            totalWeight += Double(detail.reps) * Double(detail.sets)
+                        } else {
+                            // Для силовых упражнений считаем общий вес
+                            totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
+                        }
                     }
                 }
             }

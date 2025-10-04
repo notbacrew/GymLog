@@ -84,6 +84,15 @@ struct Constants {
         static let time = "HH:mm"
         static let chart = "dd.MM"
     }
+    
+    // MARK: - Filter Periods
+    enum FilterPeriod: String, CaseIterable {
+        case all = "Все"
+        case today = "Сегодня"
+        case week = "Неделя"
+        case month = "Месяц"
+        case year = "Год"
+    }
 }
 
 // MARK: - Extensions

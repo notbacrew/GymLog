@@ -38,19 +38,23 @@ struct ExerciseListView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                // Фильтры
-                VStack(spacing: 12) {
+            VStack(spacing: 0) {
+                // Поиск и фильтры
+                VStack(spacing: 16) {
                     // Поиск
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 16, weight: .medium))
+                        
                         TextField("Поиск упражнений", text: $searchText)
+                            .font(.system(size: 16, weight: .regular))
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
                     
                     // Категории
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -59,30 +63,68 @@ struct ExerciseListView: View {
                                 Button(action: {
                                     selectedCategory = category
                                 }) {
-                                    Text(category)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(selectedCategory == category ? Color.blue : Color(.systemGray5))
-                                        .foregroundColor(selectedCategory == category ? .white : .primary)
-                                        .cornerRadius(20)
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "tag")
+                                            .font(.system(size: 12, weight: .medium))
+                                        
+                                        Text(category)
+                                            .font(.system(size: 14, weight: .medium))
+                                    }
+                                    .foregroundColor(selectedCategory == category ? .blue : .secondary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(selectedCategory == category ? Color.blue.opacity(0.1) : Color(.systemGray5))
+                                    )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 16)
                     }
                 }
-                .padding(.top)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .background(Color(.systemGroupedBackground))
                 
                 // Список упражнений
-                List {
-                    ForEach(filteredExercises, id: \.id) { exercise in
-                        NavigationLink(destination: ExerciseDetailView(exercise: exercise)) {
-                            ExerciseRowView(exercise: exercise)
-                        }
+                if filteredExercises.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "dumbbell")
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundColor(.secondary)
+                        
+                        Text("Упражнения не найдены")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text("Попробуйте изменить поисковый запрос или категорию")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .onDelete(perform: deleteExercises)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(filteredExercises, id: \.id) { exercise in
+                                NavigationLink(destination: ExerciseDetailView(exercise: exercise)) {
+                                    ExerciseRowView(exercise: exercise)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                    .refreshable {
+                        // Обновляем данные при pull-to-refresh
+                        viewContext.refreshAllObjects()
+                    }
+                    .background(Color(.systemGroupedBackground))
                 }
-                .listStyle(PlainListStyle())
             }
             .navigationTitle("Упражнения")
             .toolbar {
@@ -118,45 +160,53 @@ struct ExerciseRowView: View {
     let exercise: Exercise
     
     var body: some View {
-        HStack {
+        HStack(spacing: 16) {
             // Иконка упражнения
             if let imageData = exercise.image,
                let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
+                    .frame(width: 60, height: 60)
                     .clipped()
-                    .cornerRadius(8)
+                    .cornerRadius(12)
             } else {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray5))
-                    .frame(width: 50, height: 50)
+                    .frame(width: 60, height: 60)
                     .overlay(
                         Image(systemName: "dumbbell")
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundColor(.gray)
                     )
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(exercise.name ?? "Без названия")
-                    .font(.headline)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
                 
                 if let category = exercise.category {
                     Text(category)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(4)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
                 }
             }
             
             Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(20)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 }
 

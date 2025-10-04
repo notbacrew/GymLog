@@ -21,17 +21,9 @@ struct WorkoutListView: View {
     
     @State private var showingAddWorkout = false
     @State private var searchText = ""
-    @State private var selectedPeriod: FilterPeriod = .all
+    @State private var selectedPeriod: Constants.FilterPeriod = .all
     @State private var selectedCategory: String = "Все"
     @State private var showingFilters = false
-    
-    enum FilterPeriod: String, CaseIterable {
-        case all = "Все"
-        case today = "Сегодня"
-        case week = "Неделя"
-        case month = "Месяц"
-        case year = "Год"
-    }
     
     private var categories: [String] {
         var cats = ["Все"]
@@ -127,6 +119,10 @@ struct WorkoutListView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                     }
+                    .refreshable {
+                        // Обновляем данные при pull-to-refresh
+                        viewContext.refreshAllObjects()
+                    }
                 }
             }
             .background(Color(.systemGroupedBackground))
@@ -171,7 +167,7 @@ struct WorkoutListView: View {
 // MARK: - Search and Filters
 struct SearchAndFiltersView: View {
     @Binding var searchText: String
-    @Binding var selectedPeriod: WorkoutListView.FilterPeriod
+    @Binding var selectedPeriod: Constants.FilterPeriod
     @Binding var selectedCategory: String
     let categories: [String]
     @Binding var showingFilters: Bool
@@ -201,7 +197,19 @@ struct SearchAndFiltersView: View {
                     icon: "calendar",
                     isSelected: true
                 ) {
-                    // Menu будет добавлен позже
+                    // Переключаем между периодами
+                    switch selectedPeriod {
+                    case .all:
+                        selectedPeriod = .today
+                    case .today:
+                        selectedPeriod = .week
+                    case .week:
+                        selectedPeriod = .month
+                    case .month:
+                        selectedPeriod = .year
+                    case .year:
+                        selectedPeriod = .all
+                    }
                 }
                 
                 // Фильтр по категории
@@ -210,7 +218,11 @@ struct SearchAndFiltersView: View {
                     icon: "tag",
                     isSelected: true
                 ) {
-                    // Menu будет добавлен позже
+                    // Переключаем между категориями
+                    if let currentIndex = categories.firstIndex(of: selectedCategory) {
+                        let nextIndex = (currentIndex + 1) % categories.count
+                        selectedCategory = categories[nextIndex]
+                    }
                 }
                 
                 Spacer()

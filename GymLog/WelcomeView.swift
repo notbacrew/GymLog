@@ -23,23 +23,24 @@ struct WelcomeView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Градиентный фон
-                LinearGradient(
-                    colors: [
-                        Color.blue.opacity(0.1),
-                        Color.purple.opacity(0.05),
-                        Color.blue.opacity(0.1)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                ScrollView {
+            GeometryReader { geometry in
+                ZStack {
+                    // Градиентный фон
+                    LinearGradient(
+                        colors: [
+                            Color.blue.opacity(0.1),
+                            Color.purple.opacity(0.05),
+                            Color.blue.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
+                    
                     VStack(spacing: 0) {
                         // Верхняя секция с логотипом
                         WelcomeHeaderView()
+                            .frame(height: geometry.size.height * 0.4)
                         
                         // Форма входа
                         WelcomeFormView(
@@ -50,6 +51,7 @@ struct WelcomeView: View {
                             onLogin: login,
                             onRegister: { showingRegister = true }
                         )
+                        .frame(height: geometry.size.height * 0.6)
                     }
                 }
             }
@@ -94,8 +96,8 @@ struct WelcomeView: View {
 // MARK: - Welcome Header
 struct WelcomeHeaderView: View {
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 60)
+        VStack(spacing: 0) {
+            Spacer(minLength: 40)
             
             // Логотип с анимацией
             ZStack {
@@ -107,11 +109,11 @@ struct WelcomeHeaderView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 140, height: 140)
-                    .blur(radius: 20)
+                    .frame(width: 100, height: 100)
+                    .blur(radius: 15)
                 
                 Image(systemName: "dumbbell.fill")
-                    .font(.system(size: 60, weight: .medium))
+                    .font(.system(size: 40, weight: .medium))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.blue, .purple],
@@ -122,9 +124,9 @@ struct WelcomeHeaderView: View {
             }
             
             // Заголовок и описание
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 Text("GymLog")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.blue, .purple],
@@ -134,13 +136,13 @@ struct WelcomeHeaderView: View {
                     )
                 
                 Text("Ваш персональный дневник тренировок")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 24)
             }
             
-            Spacer(minLength: 40)
+            Spacer(minLength: 20)
         }
     }
 }
@@ -155,22 +157,22 @@ struct WelcomeFormView: View {
     let onRegister: () -> Void
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 20) {
             // Карточка с формой
-            VStack(spacing: 24) {
+            VStack(spacing: 20) {
                 // Заголовок формы
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Text("Добро пожаловать!")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
                     
                     Text("Войдите в свой аккаунт")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
                 
                 // Поля ввода
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Поле имени пользователя
                     CustomTextField(
                         title: "Имя пользователя",
@@ -199,38 +201,38 @@ struct WelcomeFormView: View {
                     action: onLogin
                 )
             }
-            .padding(32)
+            .padding(24)
             .background(Color(.systemBackground))
-            .cornerRadius(24)
-            .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-            .padding(.horizontal, 24)
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
+            .padding(.horizontal, 20)
             
             // Ссылка на регистрацию
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 Text("Нет аккаунта?")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
                 
                 Button(action: onRegister) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "person.badge.plus")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                         
                         Text("Создать аккаунт")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                     }
                     .foregroundColor(.blue)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 10)
                             .fill(Color.blue.opacity(0.1))
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
             
-            Spacer(minLength: 40)
+            Spacer(minLength: 20)
         }
     }
 }

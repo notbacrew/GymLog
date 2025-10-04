@@ -20,10 +20,11 @@ struct AddWorkoutDetailView: View {
     @State private var sets: Int16 = 1
     @State private var reps: Int16 = 1
     @State private var weight: Double = 0.0
+    @State private var minutes: Int16 = 1
     @State private var comment = ""
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     HStack {
@@ -60,31 +61,51 @@ struct AddWorkoutDetailView: View {
                 }
                 
                 Section("Параметры") {
-                    HStack {
-                        Text("Подходы")
-                        Spacer()
-                        Stepper(value: $sets, in: 1...20) {
-                            Text("\(sets)")
-                                .frame(minWidth: 30)
+                    if exercise.category?.lowercased() == "кардио" {
+                        HStack {
+                            Text("Минуты")
+                            Spacer()
+                            Stepper(value: $minutes, in: 1...180) {
+                                Text("\(minutes)")
+                                    .frame(minWidth: 30)
+                            }
                         }
-                    }
-                    
-                    HStack {
-                        Text("Повторения")
-                        Spacer()
-                        Stepper(value: $reps, in: 1...100) {
-                            Text("\(reps)")
-                                .frame(minWidth: 30)
+                        
+                        HStack {
+                            Text("Интенсивность")
+                            Spacer()
+                            TextField("Легкая", text: .constant("Легкая"))
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 80)
+                                .disabled(true)
                         }
-                    }
-                    
-                    HStack {
-                        Text("Вес (кг)")
-                        Spacer()
-                        TextField("0.0", value: $weight, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
+                    } else {
+                        HStack {
+                            Text("Подходы")
+                            Spacer()
+                            Stepper(value: $sets, in: 1...20) {
+                                Text("\(sets)")
+                                    .frame(minWidth: 30)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Повторения")
+                            Spacer()
+                            Stepper(value: $reps, in: 1...100) {
+                                Text("\(reps)")
+                                    .frame(minWidth: 30)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Вес (кг)")
+                            Spacer()
+                            TextField("0.0", value: $weight, format: .number)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 80)
+                        }
                     }
                 }
                 
@@ -106,6 +127,7 @@ struct AddWorkoutDetailView: View {
                     Button("Сохранить") {
                         saveWorkoutDetail()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
         }
@@ -144,9 +166,17 @@ struct AddWorkoutDetailView: View {
             // Создать детали упражнения
             let workoutDetail = WorkoutDetail(context: viewContext)
             workoutDetail.id = UUID()
-            workoutDetail.sets = sets
-            workoutDetail.reps = reps
-            workoutDetail.weight = weight
+            
+            if exercise.category?.lowercased() == "кардио" {
+                workoutDetail.sets = 1  // Для кардио всегда 1 "подход"
+                workoutDetail.reps = minutes  // Используем reps для хранения минут
+                workoutDetail.weight = 0.0  // Для кардио вес = 0
+            } else {
+                workoutDetail.sets = sets
+                workoutDetail.reps = reps
+                workoutDetail.weight = weight
+            }
+            
             workoutDetail.comment = comment.isEmpty ? nil : comment
             workoutDetail.exercise = exercise
             workoutDetail.workout = workout
