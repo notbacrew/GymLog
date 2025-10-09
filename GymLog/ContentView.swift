@@ -43,6 +43,12 @@ struct ContentView: View {
                     Text("Достижения")
                 }
             
+            AITrainerView(authManager: authManager, context: PersistenceController.shared.container.viewContext)
+                .tabItem {
+                    Image(systemName: "brain.head.profile")
+                    Text("AI Тренер")
+                }
+            
             RestTimerView()
                 .tabItem {
                     Image(systemName: "timer")
