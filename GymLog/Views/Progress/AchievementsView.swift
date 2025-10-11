@@ -25,6 +25,7 @@ struct AchievementsView: View {
         
         // Подсчитываем статистику
         var totalSets = 0
+        var totalReps = 0
         var totalWeight = 0.0
         var consecutiveDays = 0
         var maxConsecutiveDays = 0
@@ -36,6 +37,7 @@ struct AchievementsView: View {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     totalSets += Int(detail.sets)
+                    totalReps += Int(detail.sets) * Int(detail.reps)
                     totalWeight += detail.weight * Double(detail.sets)
                 }
             }
@@ -63,6 +65,26 @@ struct AchievementsView: View {
         }
         
         maxConsecutiveDays = max(maxConsecutiveDays, currentStreak)
+        
+        // Дополнительные агрегаты для достижений
+        let now = Date()
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        let workoutsLast7Days = workouts.filter { (w: Workout) in
+            guard let d = w.date else { return false }
+            return d >= weekAgo
+        }.count
+        
+        let todaysCount = workouts.filter { (w: Workout) in
+            guard let d = w.date else { return false }
+            return calendar.isDate(d, inSameDayAs: now)
+        }.count
+        
+        let thisMonth = calendar.dateComponents([.year, .month], from: now)
+        let workoutsThisMonth = workouts.filter { (w: Workout) in
+            guard let d = w.date else { return false }
+            let comp = calendar.dateComponents([.year, .month], from: d)
+            return comp.year == thisMonth.year && comp.month == thisMonth.month
+        }.count
         
         return [
             GymAchievement(
@@ -96,6 +118,36 @@ struct AchievementsView: View {
                 maxProgress: 10
             ),
             GymAchievement(
+                id: "twenty_workouts",
+                title: "На разогреве",
+                description: "Проведите 20 тренировок",
+                icon: "20.circle.fill",
+                color: .teal,
+                isUnlocked: totalWorkouts >= 20,
+                progress: min(totalWorkouts, 20),
+                maxProgress: 20
+            ),
+            GymAchievement(
+                id: "fifty_workouts",
+                title: "Полсотни",
+                description: "Проведите 50 тренировок",
+                icon: "50.circle.fill",
+                color: .indigo,
+                isUnlocked: totalWorkouts >= 50,
+                progress: min(totalWorkouts, 50),
+                maxProgress: 50
+            ),
+            GymAchievement(
+                id: "hundred_workouts",
+                title: "Сотня тренировок",
+                description: "Проведите 100 тренировок",
+                icon: "100.circle.fill",
+                color: .yellow,
+                isUnlocked: totalWorkouts >= 100,
+                progress: min(totalWorkouts, 100),
+                maxProgress: 100
+            ),
+            GymAchievement(
                 id: "hundred_sets",
                 title: "Сотня подходов",
                 description: "Выполните 100 подходов",
@@ -126,6 +178,36 @@ struct AchievementsView: View {
                 maxProgress: 1000
             ),
             GymAchievement(
+                id: "two_thousand_sets",
+                title: "2000 подходов",
+                description: "Наберите 2000 подходов за всё время",
+                icon: "number",
+                color: .orange,
+                isUnlocked: totalSets >= 2000,
+                progress: min(totalSets, 2000),
+                maxProgress: 2000
+            ),
+            GymAchievement(
+                id: "five_thousand_sets",
+                title: "5000 подходов",
+                description: "Наберите 5000 подходов за всё время",
+                icon: "number",
+                color: .pink,
+                isUnlocked: totalSets >= 5000,
+                progress: min(totalSets, 5000),
+                maxProgress: 5000
+            ),
+            GymAchievement(
+                id: "ten_thousand_reps",
+                title: "10 000 повторений",
+                description: "Выполните суммарно 10 000 повторений",
+                icon: "repeat",
+                color: .teal,
+                isUnlocked: totalReps >= 10_000,
+                progress: min(totalReps, 10_000),
+                maxProgress: 10_000
+            ),
+            GymAchievement(
                 id: "week_streak",
                 title: "Неделя подряд",
                 description: "Тренируйтесь 7 дней подряд",
@@ -134,6 +216,16 @@ struct AchievementsView: View {
                 isUnlocked: maxConsecutiveDays >= 7,
                 progress: min(maxConsecutiveDays, 7),
                 maxProgress: 7
+            ),
+            GymAchievement(
+                id: "two_weeks_streak",
+                title: "Две недели подряд",
+                description: "Тренируйтесь 14 дней подряд",
+                icon: "calendar",
+                color: .blue,
+                isUnlocked: maxConsecutiveDays >= 14,
+                progress: min(maxConsecutiveDays, 14),
+                maxProgress: 14
             ),
             GymAchievement(
                 id: "month_streak",
@@ -154,6 +246,56 @@ struct AchievementsView: View {
                 isUnlocked: totalWeight >= 1000,
                 progress: min(Int(totalWeight), 1000),
                 maxProgress: 1000
+            ),
+            GymAchievement(
+                id: "mass_5k",
+                title: "Железо 5000",
+                description: "Наберите 5000 кг суммарно",
+                icon: "scalemass",
+                color: .purple,
+                isUnlocked: Int(totalWeight) >= 5000,
+                progress: min(Int(totalWeight), 5000),
+                maxProgress: 5000
+            ),
+            GymAchievement(
+                id: "mass_10k",
+                title: "Железо 10 000",
+                description: "Наберите 10 000 кг суммарно",
+                icon: "scalemass",
+                color: .orange,
+                isUnlocked: Int(totalWeight) >= 10_000,
+                progress: min(Int(totalWeight), 10_000),
+                maxProgress: 10_000
+            ),
+            GymAchievement(
+                id: "week_3_workouts",
+                title: "Три за неделю",
+                description: "Выполните 3 тренировки за последние 7 дней",
+                icon: "chart.bar.fill",
+                color: .green,
+                isUnlocked: workoutsLast7Days >= 3,
+                progress: min(workoutsLast7Days, 3),
+                maxProgress: 3
+            ),
+            GymAchievement(
+                id: "month_12_workouts",
+                title: "12 в месяц",
+                description: "Выполните 12 тренировок в текущем месяце",
+                icon: "calendar.badge.clock",
+                color: .mint,
+                isUnlocked: workoutsThisMonth >= 12,
+                progress: min(workoutsThisMonth, 12),
+                maxProgress: 12
+            ),
+            GymAchievement(
+                id: "double_day",
+                title: "Двойная сессия",
+                description: "Сделайте 2 тренировки за один день",
+                icon: "bolt.fill",
+                color: .red,
+                isUnlocked: todaysCount >= 2,
+                progress: min(todaysCount, 2),
+                maxProgress: 2
             )
         ]
     }

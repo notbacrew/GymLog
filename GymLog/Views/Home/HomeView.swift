@@ -30,6 +30,7 @@ struct HomeView: View {
     @State private var showingQuickWorkout = false
     @State private var showingAchievements = false
     @State private var showingAddExercise = false
+    @State private var showingTimer = false
     
     private var recentWorkouts: [Workout] {
         Array(workouts.prefix(5))
@@ -81,7 +82,7 @@ struct HomeView: View {
                         HomeHeaderView(greetingText: greetingText, authManager: authManager)
                         
                         // Быстрые действия с карточным дизайном
-                        QuickActionsCardView(authManager: authManager, showingQuickWorkout: $showingQuickWorkout, showingAddExercise: $showingAddExercise)
+                        QuickActionsCardView(authManager: authManager, showingQuickWorkout: $showingQuickWorkout, showingAddExercise: $showingAddExercise, showingTimer: $showingTimer)
                         
                         // Статистика недели с улучшенным дизайном
                         WeeklyStatsCardView(stats: weeklyStats)
@@ -138,6 +139,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingAddExercise) {
                 AddExerciseView(authManager: authManager)
+            }
+            .sheet(isPresented: $showingTimer) {
+                RestTimerView()
             }
         }
     }
@@ -259,6 +263,7 @@ struct QuickActionsCardView: View {
     @ObservedObject var authManager: AuthManager
     @Binding var showingQuickWorkout: Bool
     @Binding var showingAddExercise: Bool
+    @Binding var showingTimer: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -283,6 +288,36 @@ struct QuickActionsCardView: View {
                     action: { showingAddExercise = true }
                 )
             }
+            
+            // Таймер отдыха - заметно, но не навязчиво
+            HStack {
+                Image(systemName: "timer")
+                    .foregroundColor(.orange)
+                    .font(.system(size: 16, weight: .medium))
+                
+                Text("Таймер отдыха")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: { showingTimer = true }) {
+                    HStack(spacing: 6) {
+                        Text("Запустить")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.orange)
+                        
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                }
+            }
+            .padding(.top, 8)
         }
         .padding(20)
         .background(Color(.systemBackground))

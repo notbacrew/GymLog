@@ -37,24 +37,6 @@ struct ContentView: View {
                     Text("Прогресс")
                 }
             
-            AchievementsView(authManager: authManager)
-                .tabItem {
-                    Image(systemName: "trophy.fill")
-                    Text("Достижения")
-                }
-            
-            AITrainerView(authManager: authManager, context: PersistenceController.shared.container.viewContext)
-                .tabItem {
-                    Image(systemName: "brain.head.profile")
-                    Text("AI Тренер")
-                }
-            
-            RestTimerView()
-                .tabItem {
-                    Image(systemName: "timer")
-                    Text("Таймер")
-                }
-            
             ProfileView(authManager: authManager)
                 .tabItem {
                     Image(systemName: "person.circle")

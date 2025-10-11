@@ -244,27 +244,21 @@ struct SettingsActionCard: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: Constants.Layout.padding) {
                 // Иконка
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [color, color.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .fill(color)
                     )
                 
                 // Текст
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)
                     
@@ -278,13 +272,13 @@ struct SettingsActionCard: View {
                 
                 // Стрелка
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
             }
-            .padding(20)
+            .padding(Constants.Layout.padding)
             .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cornerRadius(Constants.Layout.cornerRadius)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -307,27 +301,21 @@ struct SettingsInfoCard: View {
     
     var body: some View {
         Button(action: action ?? {}) {
-            HStack(spacing: 16) {
+            HStack(spacing: Constants.Layout.padding) {
                 // Иконка
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [color, color.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .fill(color)
                     )
                 
                 // Текст
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)
                     
@@ -342,14 +330,14 @@ struct SettingsInfoCard: View {
                 // Стрелка (если есть действие)
                 if action != nil {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(20)
+            .padding(Constants.Layout.padding)
             .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cornerRadius(Constants.Layout.cornerRadius)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(action == nil)

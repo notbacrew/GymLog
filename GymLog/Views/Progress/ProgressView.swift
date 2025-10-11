@@ -14,8 +14,8 @@ struct ProgressStatsView: View {
     
     private var workouts: [Workout] {
         guard let user = authManager.currentUser else { return [] }
-        return (user.workouts?.allObjects as? [Workout])?.sorted { 
-            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) 
+        return (user.workouts?.allObjects as? [Workout])?.sorted {
+            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast)
         } ?? []
     }
     
@@ -31,7 +31,7 @@ struct ProgressStatsView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Селектор периода
                     Picker("Период", selection: $selectedPeriod) {
                         ForEach(TimePeriod.allCases, id: \.self) { period in
@@ -39,27 +39,27 @@ struct ProgressStatsView: View {
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
+                    .padding(.horizontal, Constants.Layout.padding)
                     
-                    // Общая статистика
+                    // KPI
                     GeneralStatsView(workouts: Array(workouts), period: selectedPeriod)
                     
-                    // Распределение по категориям
+                    // Категории
                     CategoryBreakdownView(workouts: Array(workouts), period: selectedPeriod)
                     
-                    // Статистика по упражнениям (топ по макс. весу)
+                    // Топ упражнений
                     ExerciseStatsView(workouts: Array(workouts), period: selectedPeriod)
                     
-                    // График прогресса
+                    // График прогресса (линейный)
                     ProgressChartView(workouts: Array(workouts), period: selectedPeriod)
-
+                    
                     // Личные рекорды (PR)
                     PRListView(workouts: Array(workouts), period: selectedPeriod)
-
-                    // Тепловая карта календаря (активность)
+                    
+                    // Тепловая карта активности
                     ActivityHeatmapView(workouts: Array(workouts), period: selectedPeriod)
                 }
-                .padding()
+                .padding(Constants.Layout.padding)
             }
             .navigationTitle("Прогресс")
         }
@@ -151,79 +151,44 @@ struct GeneralStatsView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Общая статистика")
                 .font(.headline)
-            
             let stats = totalStats
-            
-            HStack(spacing: 20) {
-                VStack {
-                    Text("\(stats.workouts)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                    Text("Тренировок")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                VStack {
-                    Text("\(stats.sets)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                    Text("Подходов")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    DeltaTag(delta: stats.setsDelta)
-                }
-                
-                Spacer()
-                
-                VStack {
-                    Text("\(stats.reps)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                    Text("Повторений")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    DeltaTag(delta: stats.repsDelta)
-                }
-                
-                Spacer()
-                
-                VStack {
-                    Text(String(format: "%.0f", stats.weight))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.red)
-                    Text("Общий вес (кг)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    DeltaTagDouble(delta: stats.weightDelta)
-                }
-                
-                Spacer()
-                
-                VStack {
-                    Text("\(stats.cardioMinutes)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.purple)
-                    Text("Кардио (мин)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    DeltaTag(delta: stats.cardioDelta)
+            let items: [(title: String, value: String, color: Color, deltaView: AnyView?)] = [
+                ("Тренировок", "\(stats.workouts)", Constants.Colors.primary, nil),
+                ("Подходов", "\(stats.sets)", Constants.Colors.success, AnyView(DeltaTag(delta: stats.setsDelta))),
+                ("Повторений", "\(stats.reps)", Constants.Colors.warning, AnyView(DeltaTag(delta: stats.repsDelta))),
+                ("Общий вес (кг)", String(format: "%.0f", stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta))),
+                ("Кардио (мин)", "\(stats.cardioMinutes)", .purple, AnyView(DeltaTag(delta: stats.cardioDelta)))
+            ]
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: Constants.Layout.padding), GridItem(.flexible())], spacing: Constants.Layout.padding) {
+                ForEach(0..<items.count, id: \.self) { i in
+                    let item = items[i]
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(item.value)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(item.color)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text(item.title)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let delta = item.deltaView { delta }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Constants.Layout.padding)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(Constants.Layout.cornerRadius)
+                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -277,7 +242,7 @@ struct ExerciseStatsView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Топ упражнений")
                 .font(.headline)
             
@@ -293,13 +258,13 @@ struct ExerciseStatsView: View {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 40, height: 40)
+                                .frame(width: Constants.Layout.smallImageSize, height: Constants.Layout.smallImageSize)
                                 .clipped()
-                                .cornerRadius(6)
+                                .cornerRadius(Constants.Layout.smallCornerRadius)
                         } else {
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: Constants.Layout.smallCornerRadius)
                                 .fill(Color(.systemGray5))
-                                .frame(width: 40, height: 40)
+                                .frame(width: Constants.Layout.smallImageSize, height: Constants.Layout.smallImageSize)
                                 .overlay(
                                     Image(systemName: "dumbbell")
                                         .foregroundColor(.gray)
@@ -321,7 +286,7 @@ struct ExerciseStatsView: View {
                         VStack(alignment: .trailing) {
                             Text("\(String(format: "%.1f", stat.maxWeight)) кг")
                                 .font(.headline)
-                                .foregroundColor(.blue)
+                                .foregroundColor(Constants.Colors.primary)
                             Text("\(stat.totalSets) подходов")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -331,9 +296,9 @@ struct ExerciseStatsView: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -369,7 +334,7 @@ struct ProgressChartView: View {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     if (detail.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        // учитываем минуты отдельно, в график объема силовых не включаем
+                        // не включаем кардио в график силы
                     } else {
                         dayWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                     }
@@ -384,7 +349,7 @@ struct ProgressChartView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("График прогресса")
                 .font(.headline)
             
@@ -393,33 +358,42 @@ struct ProgressChartView: View {
                     .foregroundColor(.secondary)
                     .italic()
             } else {
-                // Простой график в виде столбцов
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(Array(chartData.enumerated()), id: \.offset) { index, data in
-                        VStack {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .frame(width: 20, height: max(10, CGFloat(data.weight / 10)))
-                            
-                            Text(formatDate(data.date))
-                                .font(.caption2)
-                                .rotationEffect(.degrees(-45))
+                GeometryReader { proxy in
+                    let size = proxy.size
+                    let values = chartData.map { $0.weight }
+                    let minV = values.min() ?? 0
+                    let maxV = values.max() ?? 1
+                    let range = max(maxV - minV, 1)
+                    let points: [CGPoint] = chartData.enumerated().map { idx, pair in
+                        let x = size.width * CGFloat(Double(idx) / Double(max(chartData.count - 1, 1)))
+                        let norm = (pair.weight - minV) / range
+                        let y = size.height * (1 - CGFloat(norm))
+                        return CGPoint(x: x, y: y)
+                    }
+                    ZStack(alignment: .bottom) {
+                        Path { path in
+                            guard let first = points.first else { return }
+                            path.move(to: first)
+                            for p in points.dropFirst() {
+                                path.addLine(to: p)
+                            }
+                        }
+                        .stroke(Constants.Colors.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        
+                        ForEach(0..<points.count, id: \.self) { i in
+                            Circle()
+                                .fill(Constants.Colors.primary)
+                                .frame(width: 4, height: 4)
+                                .position(points[i])
                         }
                     }
                 }
-                .frame(height: 150)
-                .padding()
+                .frame(height: 180)
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM"
-        return formatter.string(from: date)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -484,7 +458,7 @@ struct CategoryBreakdownView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Распределение по категориям")
                 .font(.headline)
             
@@ -493,26 +467,34 @@ struct CategoryBreakdownView: View {
                     .foregroundColor(.secondary)
                     .italic()
             } else {
+                let maxVolume = items.map { $0.volume }.max() ?? 1
                 ForEach(items, id: \.category) { item in
-                    HStack {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.categoryColor(for: item.category))
-                            .frame(width: 10, height: 10)
-                        Text(item.category)
-                            .font(.subheadline)
-                        Spacer()
-                        Text(String(format: "%.0f кг", item.volume))
-                            .font(.subheadline)
-                        Text(String(format: "(%.0f%%)", item.share * 100))
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(item.category)
+                                .font(.subheadline)
+                            Spacer()
+                            Text(String(format: "%.0f кг", item.volume))
+                                .font(.subheadline)
+                        }
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color(.systemGray5))
+                                .frame(height: 12)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.categoryColor(for: item.category))
+                                .frame(width: max(8, CGFloat(item.volume / maxVolume) * UIScreen.main.bounds.width * 0.6), height: 12)
+                        }
+                        Text(String(format: "%.0f%%", item.share * 100))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -545,7 +527,7 @@ struct PRListView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Личные рекорды (оценочно)")
                 .font(.headline)
             if items.isEmpty {
@@ -558,15 +540,24 @@ struct PRListView: View {
                         Image(systemName: "trophy.fill").foregroundColor(.yellow)
                         Text(item.title).font(.subheadline)
                         Spacer()
-                        Text(item.subtitle).font(.subheadline).foregroundColor(.blue)
+                        HStack(spacing: 6) {
+                            Text("PR")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Constants.Colors.primary.opacity(0.15))
+                                .foregroundColor(Constants.Colors.primary)
+                                .cornerRadius(6)
+                            Text(item.subtitle).font(.subheadline).foregroundColor(Constants.Colors.primary)
+                        }
                     }
                     .padding(.vertical, 2)
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -603,7 +594,7 @@ struct ActivityHeatmapView: View {
         switch period {
         case .week: count = 6
         case .month: count = 29
-        case .year: count = 179
+        case .year: count = 179 // Возвращаем как было раньше
         }
         return stride(from: 0, through: count, by: 1).compactMap {
             cal.date(byAdding: .day, value: -$0, to: cal.startOfDay(for: now))
@@ -615,31 +606,24 @@ struct ActivityHeatmapView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Активность по дням")
                 .font(.headline)
             
-            let cal = Calendar.current
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(14), spacing: 6), count: period == .year ? 26 : (period == .month ? 10 : 7)), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(12), spacing: 2), count: period == .year ? 20 : (period == .month ? 10 : 7)), spacing: 2) {
                 ForEach(Array(daysSequence), id: \.self) { day in
                     let score = days[day, default: 0]
                     let intensity = Double(score) / Double(maxScore)
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.blue.opacity(0.2 + 0.6 * intensity))
-                        .frame(width: 14, height: 14)
-                        .overlay(
-                            Text(cal.component(.day, from: day).description)
-                                .font(.system(size: 8))
-                                .foregroundColor(.white.opacity(intensity > 0.5 ? 1 : 0.6))
-                        )
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Constants.Colors.primary.opacity(0.15 + 0.6 * intensity))
+                        .frame(width: 12, height: 12)
                         .accessibilityLabel(Text("\(day, formatter: DateFormatter.short) — активность: \(score)"))
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(Constants.Layout.padding)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(Constants.Layout.cornerRadius)
     }
 }
 
@@ -668,3 +652,5 @@ private extension Array where Element == Workout {
     return ProgressStatsView(authManager: authManager)
         .environment(\.managedObjectContext, context)
 }
+
+

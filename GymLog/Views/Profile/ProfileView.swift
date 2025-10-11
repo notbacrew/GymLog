@@ -13,9 +13,123 @@ struct ProfileView: View {
     @ObservedObject var authManager: AuthManager
     @State private var showingEditProfile = false
     @State private var showingLogoutAlert = false
+    @State private var showingSettings = false
+    @State private var showingAchievements = false
     
     private var userStatistics: UserStatistics {
         authManager.getUserStatistics()
+    }
+    
+    private var workouts: [Workout] {
+        guard let user = authManager.currentUser else { return [] }
+        return (user.workouts?.allObjects as? [Workout])?.sorted {
+            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast)
+        } ?? []
+    }
+    
+    private var achievements: [GymAchievement] {
+        let calendar = Calendar.current
+        let totalWorkouts = workouts.count
+        
+        // Подсчитываем статистику
+        var totalSets = 0
+        var totalReps = 0
+        var totalWeight = 0.0
+        var consecutiveDays = 0
+        var maxConsecutiveDays = 0
+        
+        var lastWorkoutDate: Date?
+        var currentStreak = 0
+        
+        for workout in workouts.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }) {
+            if let details = workout.details?.allObjects as? [WorkoutDetail] {
+                for detail in details {
+                    totalSets += Int(detail.sets)
+                    totalReps += Int(detail.sets) * Int(detail.reps)
+                    totalWeight += detail.weight * Double(detail.sets)
+                }
+            }
+            
+            // Подсчет последовательных дней
+            if let workoutDate = workout.date {
+                let workoutDay = calendar.startOfDay(for: workoutDate)
+                
+                if let lastDate = lastWorkoutDate {
+                    let lastDay = calendar.startOfDay(for: lastDate)
+                    let daysBetween = calendar.dateComponents([.day], from: workoutDay, to: lastDay).day ?? 0
+                    
+                    if daysBetween == 1 {
+                        currentStreak += 1
+                    } else if daysBetween > 1 {
+                        maxConsecutiveDays = max(maxConsecutiveDays, currentStreak)
+                        currentStreak = 1
+                    }
+                } else {
+                    currentStreak = 1
+                }
+                
+                lastWorkoutDate = workoutDate
+            }
+        }
+        
+        maxConsecutiveDays = max(maxConsecutiveDays, currentStreak)
+        
+        return [
+            GymAchievement(
+                id: "first_workout",
+                title: "Первая тренировка",
+                description: "Создайте свою первую тренировку",
+                icon: "play.circle.fill",
+                color: .green,
+                isUnlocked: totalWorkouts >= 1,
+                progress: min(totalWorkouts, 1),
+                maxProgress: 1
+            ),
+            GymAchievement(
+                id: "five_workouts",
+                title: "Начало пути",
+                description: "Проведите 5 тренировок",
+                icon: "5.circle.fill",
+                color: .blue,
+                isUnlocked: totalWorkouts >= 5,
+                progress: min(totalWorkouts, 5),
+                maxProgress: 5
+            ),
+            GymAchievement(
+                id: "ten_workouts",
+                title: "Регулярность",
+                description: "Проведите 10 тренировок",
+                icon: "10.circle.fill",
+                color: .purple,
+                isUnlocked: totalWorkouts >= 10,
+                progress: min(totalWorkouts, 10),
+                maxProgress: 10
+            ),
+            GymAchievement(
+                id: "hundred_sets",
+                title: "Сотня подходов",
+                description: "Выполните 100 подходов",
+                icon: "100.circle.fill",
+                color: .orange,
+                isUnlocked: totalSets >= 100,
+                progress: min(totalSets, 100),
+                maxProgress: 100
+            ),
+            GymAchievement(
+                id: "week_streak",
+                title: "Неделя подряд",
+                description: "Тренируйтесь 7 дней подряд",
+                icon: "calendar.badge.plus",
+                color: .cyan,
+                isUnlocked: maxConsecutiveDays >= 7,
+                progress: min(maxConsecutiveDays, 7),
+                maxProgress: 7
+            )
+        ]
+    }
+    
+    private var unlockedAchievements: [GymAchievement] {
+        achievements.filter { $0.isUnlocked }
     }
     
     var body: some View {
@@ -112,6 +226,71 @@ struct ProfileView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
                     
+                    // Достижения
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Text("Достижения")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Button("Все") {
+                                showingAchievements = true
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Constants.Colors.primary)
+                        }
+                        
+                        if unlockedAchievements.isEmpty {
+                            Text("Пока нет разблокированных достижений")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.secondary)
+                                .italic()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 20)
+                        } else {
+                            VStack(spacing: 12) {
+                                ForEach(Array(unlockedAchievements.prefix(3)), id: \.id) { achievement in
+                                    HStack(spacing: 12) {
+                                        Image(systemName: achievement.icon)
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .frame(width: 36, height: 36)
+                                            .background(
+                                                Circle()
+                                                    .fill(achievement.color)
+                                            )
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(achievement.title)
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                            
+                                            Text(achievement.description)
+                                                .font(.system(size: 13, weight: .regular))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .font(.system(size: 20))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemBackground))
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+                    
                     // Действия
                     VStack(spacing: 16) {
                         Text("Действия")
@@ -124,15 +303,23 @@ struct ProfileView: View {
                                 icon: "pencil.circle.fill",
                                 title: "Редактировать профиль",
                                 subtitle: "Изменить данные профиля",
-                                color: .blue,
+                                color: Constants.Colors.primary,
                                 action: { showingEditProfile = true }
+                            )
+                            
+                            ActionButtonCard(
+                                icon: "gear.circle.fill",
+                                title: "Настройки",
+                                subtitle: "Тема, данные, экспорт",
+                                color: Constants.Colors.secondary,
+                                action: { showingSettings = true }
                             )
                             
                             ActionButtonCard(
                                 icon: "arrow.right.square.fill",
                                 title: "Выйти из аккаунта",
                                 subtitle: "Завершить текущую сессию",
-                                color: .red,
+                                color: Constants.Colors.danger,
                                 action: { showingLogoutAlert = true }
                             )
                         }
@@ -145,6 +332,12 @@ struct ProfileView: View {
             .navigationTitle("Профиль")
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileView(authManager: authManager)
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView(authManager: authManager)
+            }
+            .sheet(isPresented: $showingAchievements) {
+                AchievementsView(authManager: authManager)
             }
             .alert("Выйти из аккаунта", isPresented: $showingLogoutAlert) {
                 Button("Отмена", role: .cancel) { }
@@ -434,27 +627,21 @@ struct ActionButtonCard: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: Constants.Layout.padding) {
                 // Иконка
                 Image(systemName: icon)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [color, color.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .fill(color)
                     )
                 
                 // Текст
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)
                     
@@ -468,13 +655,13 @@ struct ActionButtonCard: View {
                 
                 // Стрелка
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
             }
-            .padding(20)
+            .padding(Constants.Layout.padding)
             .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cornerRadius(Constants.Layout.cornerRadius)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
     }
