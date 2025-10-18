@@ -12,12 +12,10 @@ struct WorkoutListView: View {
     @ObservedObject var authManager: AuthManager
     @Environment(\.managedObjectContext) private var viewContext
     
-    private var workouts: [Workout] {
-        guard let user = authManager.currentUser else { return [] }
-        return (user.workouts?.allObjects as? [Workout])?.sorted { 
-            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) 
-        } ?? []
-    }
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Workout.date, ascending: false)],
+        animation: .default)
+    private var workouts: FetchedResults<Workout>
     
     @State private var showingAddWorkout = false
     @State private var searchText = ""
@@ -322,7 +320,7 @@ struct WorkoutCardView: View {
     
     private var totalWeight: Double {
         guard let details = workout.details?.allObjects as? [WorkoutDetail] else { return 0 }
-        return details.reduce(0) { $0 + ($1.weight * Double($1.sets)) }
+        return details.reduce(0) { $0 + ($1.weight * Double($1.sets) * Double($1.reps)) }
     }
     
     var body: some View {

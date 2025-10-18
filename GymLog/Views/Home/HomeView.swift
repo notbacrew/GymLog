@@ -45,32 +45,31 @@ struct HomeView: View {
         }
     }
     
-    private var weeklyStats: (workouts: Int, totalSets: Int, totalWeight: Double) {
+    private var weeklyStats: (workouts: Int, totalSets: Int, totalWeight: Double, totalCalories: Double) {
         let calendar = Calendar.current
         let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
         
         let weekWorkouts = workouts.filter { $0.date ?? Date.distantPast >= weekAgo }
         var totalSets = 0
         var totalWeight = 0.0
+        var totalCalories = 0.0
         
         for workout in weekWorkouts {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     totalSets += Int(detail.sets)
                     
-                    // Для кардио считаем минуты, для силовых - вес
                     if let exerciseCategory = detail.exercise?.category?.lowercased(), exerciseCategory == "кардио" {
-                        // Для кардио считаем "общий объем" как минуты * подходы
-                        totalWeight += Double(detail.reps) * Double(detail.sets)
+                        let minutes = Int(detail.reps)
+                        totalCalories += Double(minutes) * 8.0
                     } else {
-                        // Для силовых упражнений считаем общий вес
                         totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                     }
                 }
             }
         }
         
-        return (weekWorkouts.count, totalSets, totalWeight)
+        return (weekWorkouts.count, totalSets, totalWeight, totalCalories)
     }
     
     var body: some View {
@@ -80,23 +79,29 @@ struct HomeView: View {
                     LazyVStack(spacing: 24) {
                         // Красивый заголовок с приветствием
                         HomeHeaderView(greetingText: greetingText, authManager: authManager)
+                            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         
                         // Быстрые действия с карточным дизайном
                         QuickActionsCardView(authManager: authManager, showingQuickWorkout: $showingQuickWorkout, showingAddExercise: $showingAddExercise, showingTimer: $showingTimer)
+                            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         
                         // Статистика недели с улучшенным дизайном
                         WeeklyStatsCardView(stats: weeklyStats)
+                            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         
                         // Сегодняшние тренировки
                         if !todayWorkouts.isEmpty {
                             TodaysWorkoutsCardView(workouts: todayWorkouts, authManager: authManager, onDeleteWorkout: deleteWorkout)
+                                .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         }
                         
                         // Последние тренировки
                         RecentWorkoutsCardView(workouts: recentWorkouts, authManager: authManager)
+                            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         
                         // Достижения
                         AchievementsCardView(showingAchievements: $showingAchievements)
+                            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 20)
@@ -142,6 +147,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingTimer) {
                 RestTimerView()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in
+                // Тема обновлена
             }
         }
     }
@@ -367,13 +375,13 @@ struct QuickActionButton: View {
 
 // MARK: - Weekly Stats Card
 struct WeeklyStatsCardView: View {
-    let stats: (workouts: Int, totalSets: Int, totalWeight: Double)
+    let stats: (workouts: Int, totalSets: Int, totalWeight: Double, totalCalories: Double)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Статистика недели")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundColor(ThemeManager.shared.primaryTextColor)
             
             HStack(spacing: 0) {
                 StatItemView(
@@ -399,7 +407,7 @@ struct WeeklyStatsCardView: View {
                     .padding(.horizontal, 16)
                 
                 StatItemView(
-                    value: String(format: "%.0f", stats.totalWeight),
+                    value: "\(Int(stats.totalWeight))",
                     label: "Общий вес (кг)",
                     color: .orange,
                     icon: "scalemass.fill"
@@ -407,7 +415,7 @@ struct WeeklyStatsCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

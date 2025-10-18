@@ -215,10 +215,10 @@ struct ProfileView: View {
                             )
                             
                             StatisticCard(
-                                title: "Общий вес",
-                                value: String(format: "%.0f кг", userStatistics.totalWeight),
-                                icon: "scalemass",
-                                color: .red
+                                title: "Общий вес (кг)",
+                                value: "\(Int(userStatistics.totalWeight))",
+                                icon: "scalemass.fill",
+                                color: .orange
                             )
                         }
                     }

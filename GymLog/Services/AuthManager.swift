@@ -219,7 +219,7 @@ class AuthManager: ObservableObject {
     
     func getUserStatistics() -> UserStatistics {
         guard let user = currentUser else {
-            return UserStatistics(workoutCount: 0, exerciseCount: 0, totalSets: 0, totalWeight: 0.0)
+            return UserStatistics(workoutCount: 0, exerciseCount: 0, totalSets: 0, totalWeight: 0.0, totalCalories: 0.0)
         }
         
         let workoutCount = user.workouts?.count ?? 0
@@ -227,6 +227,7 @@ class AuthManager: ObservableObject {
         
         var totalSets = 0
         var totalWeight = 0.0
+        var totalCalories = 0.0
         
         if let workouts = user.workouts?.allObjects as? [Workout] {
             for workout in workouts {
@@ -236,8 +237,8 @@ class AuthManager: ObservableObject {
                         
                         // Для кардио считаем минуты, для силовых - вес
                         if let exerciseCategory = detail.exercise?.category?.lowercased(), exerciseCategory == "кардио" {
-                            // Для кардио считаем "общий объем" как минуты * подходы
-                            totalWeight += Double(detail.reps) * Double(detail.sets)
+                            let minutes = Int(detail.reps)
+                            totalCalories += Double(minutes) * 8.0  // approx kcal per min
                         } else {
                             // Для силовых упражнений считаем общий вес
                             totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
@@ -251,7 +252,8 @@ class AuthManager: ObservableObject {
             workoutCount: workoutCount,
             exerciseCount: exerciseCount,
             totalSets: totalSets,
-            totalWeight: totalWeight
+            totalWeight: totalWeight,
+            totalCalories: totalCalories
         )
     }
 }
@@ -263,6 +265,15 @@ struct UserStatistics {
     let exerciseCount: Int
     let totalSets: Int
     let totalWeight: Double
+    let totalCalories: Double
+    
+    init(workoutCount: Int, exerciseCount: Int, totalSets: Int, totalWeight: Double, totalCalories: Double) {
+        self.workoutCount = workoutCount
+        self.exerciseCount = exerciseCount
+        self.totalSets = totalSets
+        self.totalWeight = totalWeight
+        self.totalCalories = totalCalories
+    }
 }
 
 enum AuthError: LocalizedError {

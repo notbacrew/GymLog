@@ -63,10 +63,10 @@ struct AddWorkoutDetailView: View {
                 Section("Параметры") {
                     if exercise.category?.lowercased() == "кардио" {
                         HStack {
-                            Text("Минуты")
+                            Text("Время (мин)")
                             Spacer()
-                            Stepper(value: $minutes, in: 1...180) {
-                                Text("\(minutes)")
+                            Stepper(value: $reps, in: 1...180) {
+                                Text("\(reps)")
                                     .frame(minWidth: 30)
                             }
                         }
@@ -169,7 +169,7 @@ struct AddWorkoutDetailView: View {
             
             if exercise.category?.lowercased() == "кардио" {
                 workoutDetail.sets = 1  // Для кардио всегда 1 "подход"
-                workoutDetail.reps = minutes  // Используем reps для хранения минут
+                workoutDetail.reps = reps  // Используем reps для хранения минут
                 workoutDetail.weight = 0.0  // Для кардио вес = 0
             } else {
                 workoutDetail.sets = sets

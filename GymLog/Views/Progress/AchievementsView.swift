@@ -141,7 +141,7 @@ struct AchievementsView: View {
                 id: "hundred_workouts",
                 title: "Сотня тренировок",
                 description: "Проведите 100 тренировок",
-                icon: "100.circle.fill",
+                icon: "trophy",  // New: trophy for milestone
                 color: .yellow,
                 isUnlocked: totalWorkouts >= 100,
                 progress: min(totalWorkouts, 100),
@@ -151,7 +151,7 @@ struct AchievementsView: View {
                 id: "hundred_sets",
                 title: "Сотня подходов",
                 description: "Выполните 100 подходов",
-                icon: "100.circle.fill",
+                icon: "repeat.circle.fill",  // New: repeat circle for sets
                 color: .orange,
                 isUnlocked: totalSets >= 100,
                 progress: min(totalSets, 100),
@@ -161,7 +161,7 @@ struct AchievementsView: View {
                 id: "five_hundred_sets",
                 title: "Полтысячи",
                 description: "Выполните 500 подходов",
-                icon: "500.circle.fill",
+                icon: "flame.fill",  // New: flame for burning sets
                 color: .red,
                 isUnlocked: totalSets >= 500,
                 progress: min(totalSets, 500),
@@ -171,7 +171,7 @@ struct AchievementsView: View {
                 id: "thousand_sets",
                 title: "Тысячник",
                 description: "Выполните 1000 подходов",
-                icon: "1000.circle.fill",
+                icon: "star.fill",  // New: star for achievement
                 color: .yellow,
                 isUnlocked: totalSets >= 1000,
                 progress: min(totalSets, 1000),
@@ -181,7 +181,7 @@ struct AchievementsView: View {
                 id: "two_thousand_sets",
                 title: "2000 подходов",
                 description: "Наберите 2000 подходов за всё время",
-                icon: "number",
+                icon: "sparkles",  // New: sparkles for progress shine
                 color: .orange,
                 isUnlocked: totalSets >= 2000,
                 progress: min(totalSets, 2000),
@@ -191,7 +191,7 @@ struct AchievementsView: View {
                 id: "five_thousand_sets",
                 title: "5000 подходов",
                 description: "Наберите 5000 подходов за всё время",
-                icon: "number",
+                icon: "rosette",  // New: rosette badge
                 color: .pink,
                 isUnlocked: totalSets >= 5000,
                 progress: min(totalSets, 5000),
@@ -240,32 +240,32 @@ struct AchievementsView: View {
             GymAchievement(
                 id: "heavy_lifter",
                 title: "Тяжеловес",
-                description: "Поднимите 1000 кг за тренировку",
+                description: "Поднимите 50 000 кг за тренировку",
                 icon: "scalemass.fill",
                 color: .brown,
-                isUnlocked: totalWeight >= 1000,
-                progress: min(Int(totalWeight), 1000),
-                maxProgress: 1000
+                isUnlocked: totalWeight >= 50000,
+                progress: min(Int(totalWeight), 50000),
+                maxProgress: 50000
             ),
             GymAchievement(
-                id: "mass_5k",
-                title: "Железо 5000",
-                description: "Наберите 5000 кг суммарно",
+                id: "mass_500k",
+                title: "Железо 500 000",
+                description: "Наберите 500 000 кг суммарно",
                 icon: "scalemass",
                 color: .purple,
-                isUnlocked: Int(totalWeight) >= 5000,
-                progress: min(Int(totalWeight), 5000),
-                maxProgress: 5000
+                isUnlocked: Int(totalWeight) >= 500000,
+                progress: min(Int(totalWeight), 500000),
+                maxProgress: 500000
             ),
             GymAchievement(
-                id: "mass_10k",
-                title: "Железо 10 000",
-                description: "Наберите 10 000 кг суммарно",
-                icon: "scalemass",
+                id: "mass_1kk",
+                title: "Железо 1 000 000",
+                description: "Наберите 1 000 000 кг суммарно",
+                icon: "trophy.fill",  // New unused icon: dumbbell for heavy iron
                 color: .orange,
-                isUnlocked: Int(totalWeight) >= 10_000,
-                progress: min(Int(totalWeight), 10_000),
-                maxProgress: 10_000
+                isUnlocked: Int(totalWeight) >= 1000000,
+                progress: min(Int(totalWeight), 1000000),
+                maxProgress: 1000000
             ),
             GymAchievement(
                 id: "week_3_workouts",
