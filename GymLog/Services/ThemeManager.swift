@@ -56,7 +56,7 @@ class ThemeManager: ObservableObject {
     // Custom colors - gray for dark
     var backgroundColor: Color {
         if currentTheme == .dark {
-            return Color(red: 0.13, green: 0.13, blue: 0.13)
+            return Color.black  // Pure black for dark theme backgrounds
         }
         return Color(.systemBackground)
     }

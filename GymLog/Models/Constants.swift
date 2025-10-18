@@ -17,8 +17,7 @@ struct Constants {
         "Ноги",
         "Плечи",
         "Руки",
-        "Пресс",
-        "Кардио"
+        "Пресс"
     ]
     
     // MARK: - Colors
@@ -36,7 +35,6 @@ struct Constants {
         static let shoulders = Color.orange
         static let arms = Color.purple
         static let abs = Color.yellow
-        static let cardio = Color.pink
     }
     
     // MARK: - Icons
@@ -147,8 +145,6 @@ extension Color {
             return Constants.Colors.arms
         case "Пресс":
             return Constants.Colors.abs
-        case "Кардио":
-            return Constants.Colors.cardio
         default:
             return Constants.Colors.secondary
         }

@@ -85,7 +85,7 @@ struct SettingsView: View {
                             SettingsInfoCard(
                                 icon: "person.2.fill",
                                 title: "Разработчик",
-                                value: "GymLog Team",
+                                value: "Чернуха Максим П-441к",
                                 color: .green
                             )
                         }

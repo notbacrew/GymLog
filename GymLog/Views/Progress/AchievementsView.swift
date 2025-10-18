@@ -33,12 +33,13 @@ struct AchievementsView: View {
         var lastWorkoutDate: Date?
         var currentStreak = 0
         
+        // Fix totalWeight calculation to include reps for all time total
         for workout in workouts.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }) {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     totalSets += Int(detail.sets)
                     totalReps += Int(detail.sets) * Int(detail.reps)
-                    totalWeight += detail.weight * Double(detail.sets)
+                    totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)  // Include reps for total volume
                 }
             }
             
@@ -240,10 +241,10 @@ struct AchievementsView: View {
             GymAchievement(
                 id: "heavy_lifter",
                 title: "Тяжеловес",
-                description: "Поднимите 50 000 кг за тренировку",
+                description: "Наберите 50 000 кг суммарно",
                 icon: "scalemass.fill",
                 color: .brown,
-                isUnlocked: totalWeight >= 50000,
+                isUnlocked: totalWeight >= 50000.0,
                 progress: min(Int(totalWeight), 50000),
                 maxProgress: 50000
             ),
@@ -253,7 +254,7 @@ struct AchievementsView: View {
                 description: "Наберите 500 000 кг суммарно",
                 icon: "scalemass",
                 color: .purple,
-                isUnlocked: Int(totalWeight) >= 500000,
+                isUnlocked: totalWeight >= 500000.0,
                 progress: min(Int(totalWeight), 500000),
                 maxProgress: 500000
             ),
@@ -261,11 +262,31 @@ struct AchievementsView: View {
                 id: "mass_1kk",
                 title: "Железо 1 000 000",
                 description: "Наберите 1 000 000 кг суммарно",
-                icon: "trophy.fill",  // New unused icon: dumbbell for heavy iron
+                icon: "dumbell",
                 color: .orange,
-                isUnlocked: Int(totalWeight) >= 1000000,
+                isUnlocked: totalWeight >= 1000000.0,
                 progress: min(Int(totalWeight), 1000000),
                 maxProgress: 1000000
+            ),
+            GymAchievement(
+                id: "mass_10m",
+                title: "Железо 10 000 000",
+                description: "Наберите 10 000 000 кг суммарно",
+                icon: "dumbbell.fill",
+                color: .purple,
+                isUnlocked: totalWeight >= 10000000.0,
+                progress: min(Int(totalWeight), 10000000),
+                maxProgress: 10000000
+            ),
+            GymAchievement(
+                id: "mass_100m",
+                title: "Железо 100 000 000",
+                description: "Наберите 100 000 000 кг суммарно",
+                icon: "trophy.fill",
+                color: .yellow,
+                isUnlocked: totalWeight >= 100000000.0,
+                progress: min(Int(totalWeight), 100000000),
+                maxProgress: 100000000
             ),
             GymAchievement(
                 id: "week_3_workouts",

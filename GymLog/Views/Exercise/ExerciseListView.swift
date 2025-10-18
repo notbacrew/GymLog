@@ -23,7 +23,7 @@ struct ExerciseListView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "Все"
     
-    private let categories = ["Все", "Грудь", "Спина", "Ноги", "Плечи", "Руки", "Пресс", "Кардио"]
+    private let categories = ["Все"] + Constants.exerciseCategories  // All + strength categories only
     
     var filteredExercises: [Exercise] {
         let filtered = exercises.filter { exercise in
@@ -86,11 +86,14 @@ struct ExerciseListView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
-                .background(Color(.systemGroupedBackground))
+                .background(ThemeManager.shared.cardBackgroundColor)
                 
                 // Список упражнений
                 if filteredExercises.isEmpty {
+                    // Watermark в центре экрана
                     VStack(spacing: 16) {
+                        Spacer()
+                        
                         Image(systemName: "dumbbell")
                             .font(.system(size: 48, weight: .light))
                             .foregroundColor(.secondary)
@@ -103,27 +106,26 @@ struct ExerciseListView: View {
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+                        
+                        Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(filteredExercises, id: \.id) { exercise in
-                                NavigationLink(destination: ExerciseDetailView(exercise: exercise)) {
-                                    ExerciseRowView(exercise: exercise)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                    List {
+                        ForEach(filteredExercises, id: \.id) { exercise in
+                            NavigationLink(destination: ExerciseDetailView(exercise: exercise)) {
+                                ExerciseRowView(exercise: exercise)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .onDelete(perform: deleteExercises)
                     }
+                    .listStyle(PlainListStyle())
                     .refreshable {
-                        // Обновляем данные при pull-to-refresh
                         viewContext.refreshAllObjects()
                     }
-                    .background(Color(.systemGroupedBackground))
+                    .background(Color.clear)
+                    .listRowSpacing(12)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
             }
             .navigationTitle("Упражнения")
@@ -140,6 +142,8 @@ struct ExerciseListView: View {
                 AddExerciseView(authManager: authManager)
             }
         }
+        .background(Color(.systemGroupedBackground))
+        .listRowBackground(ThemeManager.shared.cardBackgroundColor)  // Gray rows
     }
     
     private func deleteExercises(offsets: IndexSet) {
@@ -204,7 +208,7 @@ struct ExerciseRowView: View {
                 .foregroundColor(.secondary)
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

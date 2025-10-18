@@ -116,7 +116,7 @@ class DataManager {
     // MARK: - Sample Data
     
     func createSampleData(context: NSManagedObjectContext, user: User) {
-        // Создаем примеры упражнений
+        // Создаем примеры упражнений (strength only)
         let exercises = [
             ("Жим лежа", "Грудь"),
             ("Приседания", "Ноги"),
@@ -125,7 +125,19 @@ class DataManager {
             ("Подтягивания", "Спина"),
             ("Отжимания", "Грудь"),
             ("Планка", "Пресс"),
-            ("Бег", "Кардио")
+            // Removed ("Бег", "Кардио")
+            ("Жим гантелей", "Грудь"),
+            ("Тяга верхнего блока", "Спина"),
+            ("Разгибание ног", "Ноги"),
+            ("Жим гантелей сидя", "Плечи"),
+            ("Сгибание рук", "Руки"),
+            ("Подъём на бицепс", "Руки"),
+            ("Скручивания", "Пресс"),
+            ("Жим узким хватом", "Грудь"),
+            ("Тяга гантели в наклоне", "Спина"),
+            ("Выпады", "Ноги"),
+            ("Разведение гантелей", "Плечи"),
+            ("Французский жим", "Руки")
         ]
         
         var createdExercises: [Exercise] = []
@@ -135,21 +147,21 @@ class DataManager {
             createdExercises.append(exercise)
         }
         
-        // Создаем примеры тренировок
+        // Создаем примеры тренировок за последний месяц (30 дней)
         let calendar = Calendar.current
         let today = Date()
         
-        for i in 0..<7 {
+        for i in 0..<30 {
             if let workoutDate = calendar.date(byAdding: .day, value: -i, to: today) {
-                let workout = createWorkout(date: workoutDate, notes: "Тренировка \(i + 1)", user: user, context: context)
+                let workout = createWorkout(date: workoutDate, notes: i % 7 == 0 ? "Тренировка фокус на \(i + 1) день" : nil, user: user, context: context)
                 
-                // Добавляем случайные упражнения в тренировку
+                // Добавляем 3-6 случайных упражнений в тренировку
                 let randomExercises = createdExercises.shuffled().prefix(Int.random(in: 3...6))
                 
                 for exercise in randomExercises {
                     let sets = Int16.random(in: 2...5)
                     let reps = Int16.random(in: 8...15)
-                    let weight = Double.random(in: 20...120)
+                    let weight = Double.random(in: 20...150)
                     
                     _ = createWorkoutDetail(
                         exercise: exercise,
@@ -157,7 +169,7 @@ class DataManager {
                         sets: sets,
                         reps: reps,
                         weight: weight,
-                        comment: i % 3 == 0 ? "Хорошо получилось" : nil,
+                        comment: Int.random(in: 0...9) < 3 ? "Хорошая серия" : nil,  // 30% with notes
                         context: context
                     )
                 }

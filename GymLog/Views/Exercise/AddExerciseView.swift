@@ -15,7 +15,7 @@ struct AddExerciseView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var name = ""
-    @State private var category = ""
+    @State private var selectedCategory = ""
     @State private var selectedImage: PhotosPickerItem?
     @State private var imageData: Data?
     @State private var showingImagePicker = false
@@ -28,9 +28,8 @@ struct AddExerciseView: View {
                 Section("Основная информация") {
                     TextField("Название упражнения", text: $name)
                     
-                    Picker("Категория", selection: $category) {
-                        Text("Выберите категорию").tag("")
-                        ForEach(categories, id: \.self) { category in
+                    Picker("Категория", selection: $selectedCategory) {
+                        ForEach(Constants.exerciseCategories, id: \.self) { category in
                             Text(category).tag(category)
                         }
                     }
@@ -88,7 +87,7 @@ struct AddExerciseView: View {
                     Button("Сохранить") {
                         saveExercise()
                     }
-                    .disabled(name.isEmpty || category.isEmpty)
+                    .disabled(name.isEmpty || selectedCategory.isEmpty)
                 }
             }
         }
@@ -107,7 +106,7 @@ struct AddExerciseView: View {
         withAnimation {
             let newExercise = DataManager.shared.createExercise(
                 name: name,
-                category: category,
+                category: selectedCategory,
                 image: imageData,
                 user: user,
                 context: viewContext

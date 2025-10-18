@@ -81,6 +81,6 @@ struct WorkoutFiltersView: View {
     WorkoutFiltersView(
         selectedPeriod: .constant(Constants.FilterPeriod.all),
         selectedCategory: .constant("Все"),
-        categories: ["Все", "Грудь", "Спина", "Ноги"]
+        categories: Constants.exerciseCategories.filter { $0 != "Кардио" }
     )
 }

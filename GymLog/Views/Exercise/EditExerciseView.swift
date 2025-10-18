@@ -19,6 +19,7 @@ struct EditExerciseView: View {
     @State private var category: String
     @State private var selectedImage: PhotosPickerItem?
     @State private var imageData: Data?
+    @State private var showingDeleteAlert = false
     
     private let categories = ["Грудь", "Спина", "Ноги", "Плечи", "Руки", "Пресс", "Кардио"]
     
@@ -92,11 +93,27 @@ struct EditExerciseView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Сохранить") {
-                        saveExercise()
+                    Menu {
+                        Button("Сохранить") {
+                            saveExercise()
+                        }
+                        .disabled(name.isEmpty || category.isEmpty)
+                        
+                        Button("Удалить", role: .destructive) {
+                            showingDeleteAlert = true
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
                     }
-                    .disabled(name.isEmpty || category.isEmpty)
                 }
+            }
+            .alert("Удалить упражнение?", isPresented: $showingDeleteAlert) {
+                Button("Отмена", role: .cancel) { }
+                Button("Удалить", role: .destructive) {
+                    deleteExercise()
+                }
+            } message: {
+                Text("Это действие необратимо удалит упражнение '\(exercise.name ?? "")'.")
             }
         }
         .onChange(of: selectedImage) { _, newValue in
@@ -113,6 +130,20 @@ struct EditExerciseView: View {
             exercise.name = name
             exercise.category = category
             exercise.image = imageData
+            
+            do {
+                try viewContext.save()
+                dismiss()
+            } catch {
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
+    }
+    
+    private func deleteExercise() {
+        withAnimation {
+            viewContext.delete(exercise)
             
             do {
                 try viewContext.save()

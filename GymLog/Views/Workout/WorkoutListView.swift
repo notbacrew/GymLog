@@ -100,30 +100,29 @@ struct WorkoutListView: View {
                     categories: categories,
                     showingFilters: $showingFilters
                 )
+                .background(ThemeManager.shared.backgroundColor)  // Black like ExerciseListView search
                 
                 // Список тренировок
-                if filteredWorkouts.isEmpty {
-                    EmptyWorkoutsView()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(filteredWorkouts, id: \.id) { workout in
-                                NavigationLink(destination: WorkoutDetailView(authManager: authManager, workout: workout)) {
-                                    WorkoutCardView(workout: workout)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(filteredWorkouts, id: \.id) { workout in
+                            NavigationLink(destination: WorkoutDetailView(authManager: authManager, workout: workout)) {
+                                WorkoutCardView(workout: workout)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
                     }
-                    .refreshable {
-                        // Обновляем данные при pull-to-refresh
-                        viewContext.refreshAllObjects()
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
+                .refreshable {
+                    // Обновляем данные при pull-to-refresh
+                    viewContext.refreshAllObjects()
+                }
+                .background(ThemeManager.shared.backgroundColor.ignoresSafeArea())  // Pure black for entire page
+                .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(ThemeManager.shared.backgroundColor.ignoresSafeArea())  // Outermost black
             .navigationTitle("Тренировки")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -235,7 +234,7 @@ struct SearchAndFiltersView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 16)
-        .background(Color(.systemGroupedBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)
     }
 }
 
@@ -289,7 +288,7 @@ struct EmptyWorkoutsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)
     }
 }
 
@@ -383,7 +382,7 @@ struct WorkoutCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

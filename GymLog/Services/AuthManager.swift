@@ -219,41 +219,35 @@ class AuthManager: ObservableObject {
     
     func getUserStatistics() -> UserStatistics {
         guard let user = currentUser else {
-            return UserStatistics(workoutCount: 0, exerciseCount: 0, totalSets: 0, totalWeight: 0.0, totalCalories: 0.0)
+            return UserStatistics(workoutCount: 0, exerciseCount: 0, totalSets: 0, totalReps: 0, totalWeight: 0.0)
         }
         
-        let workoutCount = user.workouts?.count ?? 0
-        let exerciseCount = user.exercises?.count ?? 0
+        let workouts = (user.workouts?.allObjects as? [Workout]) ?? []
+        let exercises = (user.exercises?.allObjects as? [Exercise]) ?? []
         
         var totalSets = 0
+        var totalReps = 0
         var totalWeight = 0.0
-        var totalCalories = 0.0
         
-        if let workouts = user.workouts?.allObjects as? [Workout] {
-            for workout in workouts {
-                if let details = workout.details?.allObjects as? [WorkoutDetail] {
-                    for detail in details {
-                        totalSets += Int(detail.sets)
-                        
-                        // Для кардио считаем минуты, для силовых - вес
-                        if let exerciseCategory = detail.exercise?.category?.lowercased(), exerciseCategory == "кардио" {
-                            let minutes = Int(detail.reps)
-                            totalCalories += Double(minutes) * 8.0  // approx kcal per min
-                        } else {
-                            // Для силовых упражнений считаем общий вес
-                            totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
-                        }
-                    }
+        for workout in workouts {
+            if let details = workout.details?.allObjects as? [WorkoutDetail] {
+                for detail in details {
+                    totalSets += Int(detail.sets)
+                    totalReps += Int(detail.reps) * Int(detail.sets)
+                    totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                 }
             }
         }
+        
+        let workoutCount = workouts.count
+        let exerciseCount = exercises.count
         
         return UserStatistics(
             workoutCount: workoutCount,
             exerciseCount: exerciseCount,
             totalSets: totalSets,
-            totalWeight: totalWeight,
-            totalCalories: totalCalories
+            totalReps: totalReps,
+            totalWeight: totalWeight
         )
     }
 }
@@ -264,16 +258,8 @@ struct UserStatistics {
     let workoutCount: Int
     let exerciseCount: Int
     let totalSets: Int
+    let totalReps: Int
     let totalWeight: Double
-    let totalCalories: Double
-    
-    init(workoutCount: Int, exerciseCount: Int, totalSets: Int, totalWeight: Double, totalCalories: Double) {
-        self.workoutCount = workoutCount
-        self.exerciseCount = exerciseCount
-        self.totalSets = totalSets
-        self.totalWeight = totalWeight
-        self.totalCalories = totalCalories
-    }
 }
 
 enum AuthError: LocalizedError {

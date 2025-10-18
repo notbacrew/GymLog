@@ -54,10 +54,12 @@ struct WorkoutDetailView: View {
                     Text("Статистика тренировки")
                         .font(.headline)
                     
-                    let totalSets = workoutDetails.reduce(0) { $0 + $1.sets }
-                    let totalReps = workoutDetails.reduce(0) { $0 + $1.reps }
-                    let totalWeight = workoutDetails.reduce(0) { $0 + ($1.weight * Double($1.sets)) }
-                    
+                    // Update stats calculation, remove cardio filters
+                    let totalSets = workoutDetails.reduce(0) { $0 + Int($1.sets) }
+                    let totalReps = workoutDetails.reduce(0) { $0 + Int($1.reps) * Int($1.sets) }
+                    let totalWeight = workoutDetails.reduce(0) { $0 + ($1.weight * Double($1.sets) * Double($1.reps)) }
+
+                    // In VStack for stats, always HStack with sets, reps, weight
                     HStack(spacing: 20) {
                         VStack(alignment: .leading) {
                             Text("\(totalSets)")
@@ -162,37 +164,21 @@ struct WorkoutDetailCardView: View {
                 Spacer()
             }
             
-            // Параметры упражнения
+            // Always show HStack sets/reps/weight, remove if for cardio
             HStack {
                 VStack(alignment: .leading) {
                     Text("Подходы")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                     Text("\(detail.sets)")
-                        .font(.title3)
-                        .fontWeight(.semibold)
                 }
-                
                 Spacer()
-                
                 VStack(alignment: .center) {
                     Text("Повторения")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                     Text("\(detail.reps)")
-                        .font(.title3)
-                        .fontWeight(.semibold)
                 }
-                
                 Spacer()
-                
                 VStack(alignment: .trailing) {
                     Text("Вес")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                     Text("\(String(format: "%.1f", detail.weight)) кг")
-                        .font(.title3)
-                        .fontWeight(.semibold)
                 }
             }
             

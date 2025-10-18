@@ -87,24 +87,18 @@ struct GeneralStatsView: View {
         }
     }
     
-    private var totalStats: (sets: Int, reps: Int, weight: Double, cardioMinutes: Int, workouts: Int,
-                             setsDelta: Int, repsDelta: Int, weightDelta: Double, cardioDelta: Int) {
+    private var totalStats: (sets: Int, reps: Int, weight: Double, workouts: Int,
+                             setsDelta: Int, repsDelta: Int, weightDelta: Double) {
         var totalSets = 0
         var totalReps = 0
         var totalWeight = 0.0
-        var totalCardio = 0
         
         for workout in filteredWorkouts {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     totalSets += Int(detail.sets)
-                    totalReps += Int(detail.reps)
-                    // Силовые: вес * подходы * повторы; Кардио: минуты = reps, weight = 0
-                    if (detail.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        totalCardio += Int(detail.reps) * Int(detail.sets)
-                    } else {
-                        totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
-                    }
+                    totalReps += Int(detail.reps) * Int(detail.sets)
+                    totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                 }
             }
         }
@@ -128,26 +122,19 @@ struct GeneralStatsView: View {
             previousRange = workouts.filter { ($0.date ?? .distantPast) >= startPrev && ($0.date ?? .distantPast) < endPrev }
         }
 
-        var prevSets = 0, prevReps = 0, prevCardio = 0
-        var prevWeight = 0.0
+        var prevSets = 0, prevReps = 0, prevWeight = 0.0
         for workout in previousRange {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
                     prevSets += Int(detail.sets)
-                    prevReps += Int(detail.reps)
-                    if (detail.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        prevCardio += Int(detail.reps) * Int(detail.sets)
-                    } else {
-                        prevWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
-                    }
+                    prevReps += Int(detail.reps) * Int(detail.sets)
+                    prevWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                 }
             }
         }
 
-        return (
-            totalSets, totalReps, totalWeight, totalCardio, filteredWorkouts.count,
-            totalSets - prevSets, totalReps - prevReps, totalWeight - prevWeight, totalCardio - prevCardio
-        )
+        return (totalSets, totalReps, totalWeight, filteredWorkouts.count,
+                totalSets - prevSets, totalReps - prevReps, totalWeight - prevWeight)
     }
     
     var body: some View {
@@ -160,9 +147,7 @@ struct GeneralStatsView: View {
                 ("Тренировок", "\(stats.workouts)", Constants.Colors.primary, nil),
                 ("Подходов", "\(stats.sets)", Constants.Colors.success, AnyView(DeltaTag(delta: stats.setsDelta))),
                 ("Повторений", "\(stats.reps)", Constants.Colors.warning, AnyView(DeltaTag(delta: stats.repsDelta))),
-                ("Общий вес (кг)", String(format: "%.0f", stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta))),
-                ("Кардио (мин)", "\(stats.cardioMinutes)", .purple, AnyView(DeltaTag(delta: stats.cardioDelta))),
-                ("Дней активности", "\(activeDays)", .teal, nil)  // New 6th stat to fill grid
+                ("Общий вес (кг)", String(format: "%.0f", stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta)))
             ]
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Constants.Layout.padding), GridItem(.flexible())], spacing: Constants.Layout.padding) {
                 ForEach(0..<items.count, id: \.self) { i in
@@ -335,11 +320,7 @@ struct ProgressChartView: View {
             
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for detail in details {
-                    if (detail.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        // не включаем кардио в график силы
-                    } else {
-                        dayWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
-                    }
+                    dayWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
                 }
             }
             
@@ -443,12 +424,7 @@ struct CategoryBreakdownView: View {
             if let details = workout.details?.allObjects as? [WorkoutDetail] {
                 for d in details {
                     let cat = d.exercise?.category ?? "Прочее"
-                    let v: Double
-                    if (d.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        v = 0 // не смешиваем с силовым объемом
-                    } else {
-                        v = d.weight * Double(d.sets) * Double(d.reps)
-                    }
+                    let v = d.weight * Double(d.sets) * Double(d.reps)
                     totals[cat, default: 0] += v
                     totalVolume += v
                 }
@@ -514,7 +490,6 @@ struct PRListView: View {
             if let details = w.details?.allObjects as? [WorkoutDetail] {
                 for d in details {
                     guard let ex = d.exercise, let exId = ex.id else { continue }
-                    if (ex.category?.lowercased() ?? "") == "кардио" { continue }
                     let oneRM = d.weight * (1 + Double(d.reps)/30.0)
                     if let cur = bestByExercise[exId] {
                         if oneRM > cur.best { bestByExercise[exId] = (ex.name ?? "Упражнение", oneRM, w.date ?? Date()) }
@@ -577,11 +552,7 @@ struct ActivityHeatmapView: View {
             var score = 0
             if let details = w.details?.allObjects as? [WorkoutDetail] {
                 for d in details {
-                    if (d.exercise?.category?.lowercased() ?? "") == "кардио" {
-                        score += Int(d.reps)
-                    } else {
-                        score += Int(d.sets * d.reps)
-                    }
+                    score += Int(d.sets * d.reps)
                 }
             }
             map[day, default: 0] += score
