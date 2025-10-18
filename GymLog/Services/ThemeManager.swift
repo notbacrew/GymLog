@@ -63,7 +63,7 @@ class ThemeManager: ObservableObject {
     
     var cardBackgroundColor: Color {
         if currentTheme == .dark {
-            return Color(red: 0.18, green: 0.18, blue: 0.18)
+            return Color(.secondarySystemGroupedBackground)  // Match Progress page grouped style for dark
         }
         return Color(.systemBackground)
     }

@@ -155,12 +155,14 @@ struct GeneralStatsView: View {
             Text("Общая статистика")
                 .font(.headline)
             let stats = totalStats
+            let activeDays = Set(filteredWorkouts.compactMap { Calendar.current.startOfDay(for: $0.date ?? Date()) }).count
             let items: [(title: String, value: String, color: Color, deltaView: AnyView?)] = [
                 ("Тренировок", "\(stats.workouts)", Constants.Colors.primary, nil),
                 ("Подходов", "\(stats.sets)", Constants.Colors.success, AnyView(DeltaTag(delta: stats.setsDelta))),
                 ("Повторений", "\(stats.reps)", Constants.Colors.warning, AnyView(DeltaTag(delta: stats.repsDelta))),
                 ("Общий вес (кг)", String(format: "%.0f", stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta))),
-                ("Кардио (мин)", "\(stats.cardioMinutes)", .purple, AnyView(DeltaTag(delta: stats.cardioDelta)))
+                ("Кардио (мин)", "\(stats.cardioMinutes)", .purple, AnyView(DeltaTag(delta: stats.cardioDelta))),
+                ("Дней активности", "\(activeDays)", .teal, nil)  // New 6th stat to fill grid
             ]
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Constants.Layout.padding), GridItem(.flexible())], spacing: Constants.Layout.padding) {
                 ForEach(0..<items.count, id: \.self) { i in
@@ -178,7 +180,7 @@ struct GeneralStatsView: View {
                             .foregroundColor(.secondary)
                         if let delta = item.deltaView { delta }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, maxHeight: 80)  // Fixed height for uniform shape
                     .padding(Constants.Layout.padding)
                     .background(Color(.systemBackground))
                     .cornerRadius(Constants.Layout.cornerRadius)

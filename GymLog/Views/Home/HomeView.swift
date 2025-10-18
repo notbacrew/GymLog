@@ -114,21 +114,20 @@ struct HomeView: View {
                 // Размытый фон в верхней части с плавным переходом
                 VStack {
                     Rectangle()
-                        .fill(.ultraThinMaterial)
+                        .fill(ThemeManager.shared.backgroundColor)  // Use theme background for blend
                         .mask(
                             LinearGradient(
                                 colors: [
-                                    Color.black,
-                                    Color.black.opacity(0.8),
-                                    Color.black.opacity(0.4),
-                                    Color.black.opacity(0.1),
+                                    ThemeManager.shared.backgroundColor.opacity(0.8),
+                                    ThemeManager.shared.backgroundColor.opacity(0.6),
+                                    ThemeManager.shared.backgroundColor.opacity(0.4),
+                                    ThemeManager.shared.backgroundColor.opacity(0.2),
                                     Color.clear
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .backgroundExtensionEffect()
                         .frame(height: 150)
                         .ignoresSafeArea(.all, edges: .top)
                     
@@ -252,10 +251,10 @@ struct HomeHeaderView: View {
                     Spacer()
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16) // Уменьшенный отступ от иконки приложения
-            .padding(.bottom, 28)
-            .background(Color(.systemBackground))
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+            .background(ThemeManager.shared.cardBackgroundColor)  // Ensure gray on dark
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
             .padding(.horizontal, 12)
@@ -328,7 +327,7 @@ struct QuickActionsCardView: View {
             .padding(.top, 8)
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -489,7 +488,7 @@ struct TodaysWorkoutsCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -586,7 +585,7 @@ struct RecentWorkoutsCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -723,7 +722,7 @@ struct AchievementsCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -756,7 +755,7 @@ struct AchievementBadgeCardView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isUnlocked ? color.opacity(0.05) : Color(.systemGray6))
+                .fill(isUnlocked ? color.opacity(0.05) : ThemeManager.shared.cardBackgroundColor.opacity(0.3))  // Use card color for consistency
         )
         .opacity(isUnlocked ? 1.0 : 0.6)
     }
