@@ -188,83 +188,55 @@ struct SearchAndFiltersView: View {
             
             // Фильтры
             HStack(spacing: 12) {
-                // Фильтр по периоду
-                FilterChipView(
-                    title: selectedPeriod.rawValue,
-                    icon: "calendar",
-                    isSelected: true
-                ) {
-                    // Переключаем между периодами
-                    switch selectedPeriod {
-                    case .all:
-                        selectedPeriod = .today
-                    case .today:
-                        selectedPeriod = .week
-                    case .week:
-                        selectedPeriod = .month
-                    case .month:
-                        selectedPeriod = .year
-                    case .year:
-                        selectedPeriod = .all
+                // Кнопка выбора периода
+                Picker("Период", selection: $selectedPeriod) {
+                    ForEach(Constants.FilterPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue).tag(period)
                     }
                 }
+                .pickerStyle(.menu)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.quaternary, lineWidth: 0.5)
+                        )
+                )
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                 
-                // Фильтр по категории
-                FilterChipView(
-                    title: selectedCategory,
-                    icon: "tag",
-                    isSelected: true
-                ) {
-                    // Переключаем между категориями
-                    if let currentIndex = categories.firstIndex(of: selectedCategory) {
-                        let nextIndex = (currentIndex + 1) % categories.count
-                        selectedCategory = categories[nextIndex]
+                // Кнопка выбора категории
+                Picker("Категория", selection: $selectedCategory) {
+                    ForEach(categories, id: \.self) { category in
+                        Text(category).tag(category)
                     }
                 }
+                .pickerStyle(.menu)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.quaternary, lineWidth: 0.5)
+                        )
+                )
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                 
                 Spacer()
-                
-                Button(action: { showingFilters = true }) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.blue)
-                }
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 16)
         .background(ThemeManager.shared.cardBackgroundColor)
-    }
-}
-
-struct FilterChipView: View {
-    let title: String
-    let icon: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .medium))
-            }
-            .foregroundColor(isSelected ? .blue : .secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue.opacity(0.1) : Color(.systemGray5))
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 

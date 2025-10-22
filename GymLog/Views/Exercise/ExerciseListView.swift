@@ -22,7 +22,6 @@ struct ExerciseListView: View {
     @State private var showingAddExercise = false
     @State private var searchText = ""
     @State private var selectedCategory = "Все"
-    @State private var showingCategoryPicker = false
     
     private let categories = ["Все"] + Constants.exerciseCategories  // All + strength categories only
     
@@ -59,42 +58,32 @@ struct ExerciseListView: View {
                     
                     // Кнопка выбора категории
                     HStack {
-                        Button(action: {
-                            showingCategoryPicker = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "tag")
-                                    .font(.system(size: 14, weight: .medium))
-                                
-                                Text(selectedCategory)
-                                    .font(.system(size: 16, weight: .medium))
-                                
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 12, weight: .medium))
+                        Picker("Категория", selection: $selectedCategory) {
+                            ForEach(categories, id: \.self) { category in
+                                Text(category).tag(category)
                             }
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.blue.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .popover(isPresented: $showingCategoryPicker) {
-                            CategoryPickerPopover(selectedCategory: $selectedCategory)
-                        }
+                        .pickerStyle(.menu)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(.quaternary, lineWidth: 0.5)
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         
                         Spacer()
                     }
-                    .padding(.horizontal, 16)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
                 .background(ThemeManager.shared.cardBackgroundColor)
                 
                 // Список упражнений
@@ -146,12 +135,12 @@ struct ExerciseListView: View {
                         Image(systemName: "plus")
                     }
                 }
-            }
-            .sheet(isPresented: $showingAddExercise) {
-                AddExerciseView(authManager: authManager)
-            }
         }
-        .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showingAddExercise) {
+            AddExerciseView(authManager: authManager)
+        }
+    }
+        .background(ThemeManager.shared.backgroundColor.ignoresSafeArea())
         .listRowBackground(ThemeManager.shared.cardBackgroundColor)  // Gray rows
     }
     
@@ -220,84 +209,6 @@ struct ExerciseRowView: View {
         .background(ThemeManager.shared.cardBackgroundColor)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-    }
-}
-
-// MARK: - Category Picker Popover
-struct CategoryPickerPopover: View {
-    @Binding var selectedCategory: String
-    @Environment(\.dismiss) private var dismiss
-    
-    private let allCategories = ["Все"] + Constants.exerciseCategories
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Заголовок
-            HStack {
-                Text("Выберите категорию")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button("Готово") {
-                    dismiss()
-                }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(.systemGray6))
-            
-            // Список категорий
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(allCategories, id: \.self) { category in
-                        Button(action: {
-                            selectedCategory = category
-                            dismiss()
-                        }) {
-                            HStack {
-                                Image(systemName: "tag")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.blue)
-                                    .frame(width: 24)
-                                
-                                Text(category)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                
-                                Spacer()
-                                
-                                if selectedCategory == category {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(
-                                selectedCategory == category ? 
-                                Color.blue.opacity(0.05) : 
-                                Color.clear
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        if category != allCategories.last {
-                            Divider()
-                                .padding(.leading, 60)
-                        }
-                    }
-                }
-            }
-            .frame(maxHeight: 300)
-        }
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .frame(width: 280)
     }
 }
 

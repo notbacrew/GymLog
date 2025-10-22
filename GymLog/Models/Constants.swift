@@ -17,7 +17,13 @@ struct Constants {
         "Ноги",
         "Плечи",
         "Руки",
-        "Пресс"
+        "Пресс",
+        "Кардио",
+        "Ягодицы",
+        "Икры",
+        "Трапеции",
+        "Шея",
+        "Функциональные"
     ]
     
     // MARK: - Colors
@@ -35,6 +41,12 @@ struct Constants {
         static let shoulders = Color.orange
         static let arms = Color.purple
         static let abs = Color.yellow
+        static let cardio = Color.pink
+        static let glutes = Color.indigo
+        static let calves = Color.teal
+        static let traps = Color.brown
+        static let neck = Color.mint
+        static let functional = Color.cyan
     }
     
     // MARK: - Icons
@@ -145,6 +157,18 @@ extension Color {
             return Constants.Colors.arms
         case "Пресс":
             return Constants.Colors.abs
+        case "Кардио":
+            return Constants.Colors.cardio
+        case "Ягодицы":
+            return Constants.Colors.glutes
+        case "Икры":
+            return Constants.Colors.calves
+        case "Трапеции":
+            return Constants.Colors.traps
+        case "Шея":
+            return Constants.Colors.neck
+        case "Функциональные":
+            return Constants.Colors.functional
         default:
             return Constants.Colors.secondary
         }
