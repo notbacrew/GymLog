@@ -54,7 +54,7 @@ struct ProgressStatsView: View {
                     ProgressChartView(workouts: Array(workouts), period: selectedPeriod)
                     
                     // Личные рекорды (PR)
-                    PRListView(workouts: Array(workouts), period: selectedPeriod)
+                    PRListView(workouts: Array(workouts), period: selectedPeriod, authManager: authManager)
                     
                     // Тепловая карта активности
                     ActivityHeatmapView(workouts: Array(workouts), period: selectedPeriod)
@@ -147,7 +147,7 @@ struct GeneralStatsView: View {
                 ("Тренировок", "\(stats.workouts)", Constants.Colors.primary, nil),
                 ("Подходов", "\(stats.sets)", Constants.Colors.success, AnyView(DeltaTag(delta: stats.setsDelta))),
                 ("Повторений", "\(stats.reps)", Constants.Colors.warning, AnyView(DeltaTag(delta: stats.repsDelta))),
-                ("Общий вес (кг)", String(format: "%.0f", stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta)))
+                ("Общий вес (кг)", formatNumber(stats.weight), Constants.Colors.danger, AnyView(DeltaTagDouble(delta: stats.weightDelta)))
             ]
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Constants.Layout.padding), GridItem(.flexible())], spacing: Constants.Layout.padding) {
                 ForEach(0..<items.count, id: \.self) { i in
@@ -158,8 +158,8 @@ struct GeneralStatsView: View {
                             .fontWeight(.bold)
                             .foregroundColor(item.color)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
                         Text(item.title)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -169,13 +169,22 @@ struct GeneralStatsView: View {
                     .padding(Constants.Layout.padding)
                     .background(Color(.systemBackground))
                     .cornerRadius(Constants.Layout.cornerRadius)
-                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                            .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
                 }
             }
         }
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -286,12 +295,20 @@ struct ExerciseStatsView: View {
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
 struct ProgressChartView: View {
     let workouts: [Workout]
     let period: ProgressStatsView.TimePeriod
+    
+    @State private var selectedDataPoint: (date: Date, weight: Double)?
+    @State private var tooltipPosition: CGPoint = .zero
     
     private var filteredWorkouts: [Workout] {
         let calendar = Calendar.current
@@ -331,6 +348,10 @@ struct ProgressChartView: View {
             .sorted { $0.date < $1.date }
     }
     
+    private var weekDays: [String] {
+        ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("График прогресса")
@@ -341,42 +362,202 @@ struct ProgressChartView: View {
                     .foregroundColor(.secondary)
                     .italic()
             } else {
-                GeometryReader { proxy in
-                    let size = proxy.size
-                    let values = chartData.map { $0.weight }
-                    let minV = values.min() ?? 0
-                    let maxV = values.max() ?? 1
-                    let range = max(maxV - minV, 1)
-                    let points: [CGPoint] = chartData.enumerated().map { idx, pair in
-                        let x = size.width * CGFloat(Double(idx) / Double(max(chartData.count - 1, 1)))
-                        let norm = (pair.weight - minV) / range
-                        let y = size.height * (1 - CGFloat(norm))
-                        return CGPoint(x: x, y: y)
-                    }
-                    ZStack(alignment: .bottom) {
-                        Path { path in
-                            guard let first = points.first else { return }
-                            path.move(to: first)
-                            for p in points.dropFirst() {
-                                path.addLine(to: p)
+                VStack(spacing: 8) {
+                    // Y-axis labels
+                    HStack {
+                        VStack(alignment: .leading, spacing: 0) {
+                            let values = chartData.map { $0.weight }
+                            let minV = values.min() ?? 0
+                            let maxV = values.max() ?? 1
+                            let range = max(maxV - minV, 1)
+                            
+                            ForEach([0, 1, 2, 3, 4], id: \.self) { i in
+                                let value = minV + (range * Double(i) / 4)
+                                Text(formatNumber(value))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .frame(height: 20)
                             }
                         }
-                        .stroke(Constants.Colors.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .frame(width: 50)
                         
-                        ForEach(0..<points.count, id: \.self) { i in
-                            Circle()
-                                .fill(Constants.Colors.primary)
-                                .frame(width: 4, height: 4)
-                                .position(points[i])
+                        // Chart area
+                        GeometryReader { proxy in
+                            let size = proxy.size
+                            let values = chartData.map { $0.weight }
+                            let minV = values.min() ?? 0
+                            let maxV = values.max() ?? 1
+                            let range = max(maxV - minV, 1)
+                            let points: [CGPoint] = chartData.enumerated().map { idx, pair in
+                                let x = size.width * CGFloat(Double(idx) / Double(max(chartData.count - 1, 1)))
+                                let norm = (pair.weight - minV) / range
+                                let y = size.height * (1 - CGFloat(norm))
+                                return CGPoint(x: x, y: y)
+                            }
+                            
+                            ZStack {
+                                // Grid lines
+                                ForEach(0..<5, id: \.self) { i in
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(height: 0.5)
+                                        .offset(y: size.height * CGFloat(i) / 4)
+                                }
+                                
+                                // Area under the curve
+                                Path { path in
+                                    guard points.count > 0 else { return }
+                                    
+                                    let first = points[0]
+                                    path.move(to: CGPoint(x: first.x, y: size.height))
+                                    path.addLine(to: first)
+                                    
+                                    if points.count == 2 {
+                                        path.addLine(to: points[1])
+                                    } else if points.count > 2 {
+                                        for i in 1..<points.count {
+                                            let previousPoint = points[i-1]
+                                            let currentPoint = points[i]
+                                            
+                                            let controlPoint1 = CGPoint(
+                                                x: previousPoint.x + (currentPoint.x - previousPoint.x) * 0.3,
+                                                y: previousPoint.y
+                                            )
+                                            let controlPoint2 = CGPoint(
+                                                x: currentPoint.x - (currentPoint.x - previousPoint.x) * 0.3,
+                                                y: currentPoint.y
+                                            )
+                                            
+                                            path.addCurve(to: currentPoint, control1: controlPoint1, control2: controlPoint2)
+                                        }
+                                    }
+                                    
+                                    if let last = points.last {
+                                        path.addLine(to: CGPoint(x: last.x, y: size.height))
+                                    }
+                                    path.closeSubpath()
+                                }
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.blue.opacity(0.3),
+                                            Color.blue.opacity(0.1)
+                                        ]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                
+                                // Main line with smooth curves
+                                Path { path in
+                                    guard points.count > 1 else { return }
+                                    
+                                    path.move(to: points[0])
+                                    
+                                    if points.count == 2 {
+                                        path.addLine(to: points[1])
+                                    } else {
+                                        for i in 1..<points.count {
+                                            let previousPoint = points[i-1]
+                                            let currentPoint = points[i]
+                                            
+                                            let controlPoint1 = CGPoint(
+                                                x: previousPoint.x + (currentPoint.x - previousPoint.x) * 0.3,
+                                                y: previousPoint.y
+                                            )
+                                            let controlPoint2 = CGPoint(
+                                                x: currentPoint.x - (currentPoint.x - previousPoint.x) * 0.3,
+                                                y: currentPoint.y
+                                            )
+                                            
+                                            path.addCurve(to: currentPoint, control1: controlPoint1, control2: controlPoint2)
+                                        }
+                                    }
+                                }
+                                .stroke(Color.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                                
+                                // Data points
+                                ForEach(0..<points.count, id: \.self) { i in
+                                    let point = points[i]
+                                    let dataPoint = chartData[i]
+                                    
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 8, height: 8)
+                                        .position(point)
+                                        .onTapGesture {
+                                            selectedDataPoint = dataPoint
+                                            tooltipPosition = CGPoint(
+                                                x: point.x + 20,
+                                                y: point.y - 20
+                                            )
+                                        }
+                                }
+                                
+                                // Tooltip
+                                if let selectedData = selectedDataPoint {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(dayOfWeek(for: selectedData.date))
+                                            .font(.caption)
+                                            .foregroundColor(.primary)
+                                        Text("weight: \(formatNumber(selectedData.weight))")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                    .padding(8)
+                                    .background(Color.white)
+                                    .cornerRadius(8)
+                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                    .position(tooltipPosition)
+                                }
+                            }
+                        }
+                        .frame(height: 180)
+                        .onTapGesture {
+                            selectedDataPoint = nil
+                        }
+                    }
+                    
+                    // X-axis labels
+                    HStack {
+                        Spacer().frame(width: 50)
+                        HStack {
+                            ForEach(0..<weekDays.count, id: \.self) { i in
+                                Text(weekDays[i])
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
                     }
                 }
-                .frame(height: 180)
             }
         }
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
+    }
+    
+    private func dayOfWeek(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter.string(from: date)
+    }
+    
+    private func formatNumber(_ value: Double) -> String {
+        if value >= 1000000 {
+            return String(format: "%.1fM", value / 1000000)
+        } else if value >= 1000 {
+            return String(format: "%.0fK", value / 1000)
+        } else {
+            return String(format: "%.0f", value)
+        }
     }
 }
 
@@ -473,6 +654,11 @@ struct CategoryBreakdownView: View {
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -480,61 +666,159 @@ struct CategoryBreakdownView: View {
 struct PRListView: View {
     let workouts: [Workout]
     let period: ProgressStatsView.TimePeriod
+    @ObservedObject var authManager: AuthManager
+    @Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject private var prManager = PersonalRecordManager.shared
     
-    private struct PRItem: Identifiable { let id = UUID(); let title: String; let subtitle: String }
-    
-    private var items: [PRItem] {
-        let filtered = workouts.filterBy(period: period)
-        var bestByExercise: [UUID: (name: String, best: Double, date: Date)] = [:]
-        for w in filtered {
-            if let details = w.details?.allObjects as? [WorkoutDetail] {
-                for d in details {
-                    guard let ex = d.exercise, let exId = ex.id else { continue }
-                    let oneRM = d.weight * (1 + Double(d.reps)/30.0)
-                    if let cur = bestByExercise[exId] {
-                        if oneRM > cur.best { bestByExercise[exId] = (ex.name ?? "Упражнение", oneRM, w.date ?? Date()) }
-                    } else {
-                        bestByExercise[exId] = (ex.name ?? "Упражнение", oneRM, w.date ?? Date())
-                    }
-                }
+    private enum ActiveSheet: Identifiable {
+        case add
+        case edit(PersonalRecord)
+        
+        var id: String {
+            switch self {
+            case .add:
+                return "add"
+            case .edit(let record):
+                return record.id.uuidString
             }
         }
-        return bestByExercise.values.map { PRItem(title: $0.name, subtitle: String(format: "1RM ≈ %.1f кг", $0.best)) }
-            .sorted { $0.subtitle < $1.subtitle }
+    }
+    
+    @State private var activeSheet: ActiveSheet?
+    
+    private var personalRecords: [PersonalRecord] {
+        guard let userId = authManager.currentUser?.id?.uuidString else { return [] }
+        return prManager.getRecords(for: userId)
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Личные рекорды (оценочно)")
-                .font(.headline)
-            if items.isEmpty {
-                Text("Нет PR за выбранный период")
-                    .foregroundColor(.secondary)
-                    .italic()
+            HStack {
+                Text("Личные рекорды")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button {
+                    activeSheet = .add
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(Constants.Colors.primary)
+                        .font(.system(size: 20))
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if personalRecords.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "trophy")
+                        .font(.system(size: 36, weight: .regular))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Нет личных рекордов")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Нажмите, чтобы добавить свой первый рекорд")
+                        .font(.caption)
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
             } else {
-                ForEach(items) { item in
-                    HStack {
-                        Image(systemName: "trophy.fill").foregroundColor(.yellow)
-                        Text(item.title).font(.subheadline)
-                        Spacer()
-                        HStack(spacing: 6) {
-                            Text("PR")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Constants.Colors.primary.opacity(0.15))
-                                .foregroundColor(Constants.Colors.primary)
-                                .cornerRadius(6)
-                            Text(item.subtitle).font(.subheadline).foregroundColor(Constants.Colors.primary)
+                VStack(spacing: 12) {
+                    ForEach(personalRecords.sorted { $0.exerciseName < $1.exerciseName }) { record in
+                        PersonalRecordRowView(record: record) {
+                            activeSheet = .edit(record)
                         }
                     }
-                    .padding(.vertical, 2)
                 }
             }
         }
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
+        .sheet(item: $activeSheet) { item in
+            switch item {
+            case .add:
+                AddPersonalRecordView(authManager: authManager)
+            case .edit(let record):
+                EditPersonalRecordView(record: record, authManager: authManager)
+            }
+        }
+    }
+}
+
+struct PersonalRecordRowView: View {
+    let record: PersonalRecord
+    var onEdit: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: "trophy.fill")
+                    .foregroundColor(.yellow)
+                    .font(.system(size: 18, weight: .semibold))
+                    .padding(8)
+                    .background(Circle().fill(Color.yellow.opacity(0.15)))
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(record.exerciseName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(ThemeManager.shared.primaryTextColor)
+                    
+                    Text("Установлен: \(record.dateFormatted)")
+                        .font(.caption)
+                        .foregroundColor(ThemeManager.shared.secondaryTextColor)
+                    
+                    if let notes = record.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.caption)
+                            .foregroundColor(ThemeManager.shared.secondaryTextColor)
+                            .lineLimit(2)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("PR")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Constants.Colors.primary.opacity(0.15))
+                        .foregroundColor(Constants.Colors.primary)
+                        .cornerRadius(8)
+                    
+                    Text("\(record.weight, specifier: "%.1f") кг")
+                        .font(.headline)
+                        .foregroundColor(Constants.Colors.primary)
+                }
+            }
+            
+            Button(action: onEdit) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                    Text("Редактировать")
+                }
+                .font(.caption)
+                .foregroundColor(Constants.Colors.primary)
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 48)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 16).fill(ThemeManager.shared.cardBackgroundColor))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(ThemeManager.shared.cardBackgroundColor.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 
@@ -597,6 +881,11 @@ struct ActivityHeatmapView: View {
         .padding(Constants.Layout.padding)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(Constants.Layout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -616,6 +905,17 @@ private extension Array where Element == Workout {
             let from = cal.date(byAdding: .year, value: -1, to: now) ?? now
             return self.filter { ($0.date ?? .distantPast) >= from }
         }
+    }
+}
+
+// MARK: - Helper Functions
+private func formatNumber(_ value: Double) -> String {
+    if value >= 1000000 {
+        return String(format: "%.1fM", value / 1000000)
+    } else if value >= 1000 {
+        return String(format: "%.0fK", value / 1000)
+    } else {
+        return String(format: "%.0f", value)
     }
 }
 

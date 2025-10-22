@@ -104,13 +104,13 @@ struct AddExerciseView: View {
         guard let user = authManager.currentUser else { return }
         
         withAnimation {
-            let newExercise = DataManager.shared.createExercise(
-                name: name,
-                category: selectedCategory,
-                image: imageData,
-                user: user,
-                context: viewContext
-            )
+            let newExercise = Exercise(context: viewContext)
+            newExercise.id = UUID()
+            newExercise.name = name
+            newExercise.category = selectedCategory
+            newExercise.image = imageData
+            newExercise.timestamp = Date()
+            newExercise.user = user
             
             do {
                 try viewContext.save()

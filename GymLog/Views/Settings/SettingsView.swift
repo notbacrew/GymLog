@@ -102,7 +102,11 @@ struct SettingsView: View {
                         .padding(20)
                         .background(Color(.systemBackground))
                         .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -116,7 +120,7 @@ struct SettingsView: View {
             Button("Отмена", role: .cancel) { }
             Button("Добавить") {
                 guard let user = authManager.currentUser else { return }
-                DataManager.shared.createSampleData(context: viewContext, user: user)
+                createSampleData(context: viewContext, user: user)
             }
         } message: {
             Text("Это добавит примеры упражнений и тренировок для демонстрации функций приложения.")
@@ -158,6 +162,48 @@ struct SettingsView: View {
                         }
                     }
             }
+        }
+    }
+    
+    private func createSampleData(context: NSManagedObjectContext, user: User) {
+        // Создаем примеры упражнений
+        let sampleExercises = [
+            ("Жим лежа", "Грудь"),
+            ("Приседания", "Ноги"),
+            ("Становая тяга", "Спина"),
+            ("Жим стоя", "Плечи"),
+            ("Подтягивания", "Спина"),
+            ("Отжимания", "Грудь")
+        ]
+        
+        for (name, category) in sampleExercises {
+            let exercise = Exercise(context: context)
+            exercise.id = UUID()
+            exercise.name = name
+            exercise.category = category
+            exercise.timestamp = Date()
+            exercise.user = user
+        }
+        
+        // Создаем примеры тренировок
+        let calendar = Calendar.current
+        let today = Date()
+        
+        for i in 0..<3 {
+            if let workoutDate = calendar.date(byAdding: .day, value: -i, to: today) {
+                let workout = Workout(context: context)
+                workout.id = UUID()
+                workout.date = workoutDate
+                workout.notes = "Пример тренировки \(i + 1)"
+                workout.user = user
+            }
+        }
+        
+        do {
+            try context.save()
+        } catch {
+            let nsError = error as NSError
+            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
         }
     }
     
@@ -276,9 +322,13 @@ struct SettingsActionCard: View {
                     .foregroundColor(.secondary)
             }
             .padding(Constants.Layout.padding)
-            .background(Color(.systemBackground))
+            .background(ThemeManager.shared.cardBackgroundColor)
             .cornerRadius(Constants.Layout.cornerRadius)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -335,9 +385,13 @@ struct SettingsInfoCard: View {
                 }
             }
             .padding(Constants.Layout.padding)
-            .background(Color(.systemBackground))
+            .background(ThemeManager.shared.cardBackgroundColor)
             .cornerRadius(Constants.Layout.cornerRadius)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(action == nil)

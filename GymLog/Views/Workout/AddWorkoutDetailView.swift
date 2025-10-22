@@ -126,20 +126,18 @@ struct AddWorkoutDetailView: View {
                 if let existingWorkout = workouts.first {
                     workout = existingWorkout
                 } else {
-                    workout = DataManager.shared.createWorkout(
-                        date: workoutDate,
-                        notes: nil,
-                        user: user,
-                        context: viewContext
-                    )
+                    workout = Workout(context: viewContext)
+                    workout.id = UUID()
+                    workout.date = workoutDate
+                    workout.notes = nil
+                    workout.user = user
                 }
             } catch {
-                workout = DataManager.shared.createWorkout(
-                    date: workoutDate,
-                    notes: nil,
-                    user: user,
-                    context: viewContext
-                )
+                workout = Workout(context: viewContext)
+                workout.id = UUID()
+                workout.date = workoutDate
+                workout.notes = nil
+                workout.user = user
             }
             
             // Создать детали упражнения

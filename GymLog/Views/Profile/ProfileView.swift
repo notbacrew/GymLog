@@ -216,7 +216,7 @@ struct ProfileView: View {
                             
                             StatisticCard(
                                 title: "Общий вес",
-                                value: String(format: "%.0f кг", userStatistics.totalWeight),
+                                value: "\(formatNumber(userStatistics.totalWeight)) кг",
                                 icon: "scalemass",
                                 color: .red
                             )
@@ -367,6 +367,9 @@ struct StatisticCard: View {
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
             
             Text(title)
                 .font(.caption)
@@ -601,6 +604,17 @@ struct ChangePasswordView: View {
     }
 }
 
+// MARK: - Helper Functions
+private func formatNumber(_ value: Double) -> String {
+    if value >= 1000000 {
+        return String(format: "%.1fM", value / 1000000)
+    } else if value >= 1000 {
+        return String(format: "%.0fK", value / 1000)
+    } else {
+        return String(format: "%.0f", value)
+    }
+}
+
 #Preview {
     let context = PersistenceController.preview.container.viewContext
     let authManager = AuthManager(context: context)
@@ -659,9 +673,13 @@ struct ActionButtonCard: View {
                     .foregroundColor(.secondary)
             }
             .padding(Constants.Layout.padding)
-            .background(Color(.systemBackground))
+            .background(ThemeManager.shared.cardBackgroundColor)
             .cornerRadius(Constants.Layout.cornerRadius)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
     }

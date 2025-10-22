@@ -100,7 +100,7 @@ struct HomeView: View {
                             .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                         
                         // Достижения
-                        AchievementsCardView(showingAchievements: $showingAchievements)
+                        AchievementsCardView(showingAchievements: $showingAchievements, authManager: authManager)
                             .onReceive(NotificationCenter.default.publisher(for: .themeDidChange)) { _ in }
                     }
                     .padding(.horizontal, 16)
@@ -256,7 +256,11 @@ struct HomeHeaderView: View {
             .padding(.bottom, 24)
             .background(ThemeManager.shared.cardBackgroundColor)  // Ensure gray on dark
             .cornerRadius(20)
-            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
             .padding(.horizontal, 12)
         }
         .sheet(isPresented: $showingProfile) {
@@ -329,7 +333,11 @@ struct QuickActionsCardView: View {
         .padding(20)
         .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -406,7 +414,7 @@ struct WeeklyStatsCardView: View {
                     .padding(.horizontal, 16)
                 
                 StatItemView(
-                    value: "\(Int(stats.totalWeight))",
+                    value: formatNumber(stats.totalWeight),
                     label: "Общий вес (кг)",
                     color: .orange,
                     icon: "scalemass.fill"
@@ -435,6 +443,9 @@ struct StatItemView: View {
             Text(value)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
             
             Text(label)
                 .font(.system(size: 12, weight: .medium))
@@ -490,7 +501,11 @@ struct TodaysWorkoutsCardView: View {
         .padding(20)
         .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -587,7 +602,11 @@ struct RecentWorkoutsCardView: View {
         .padding(20)
         .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -671,6 +690,117 @@ struct EmptyStateView: View {
 // MARK: - Achievements Card
 struct AchievementsCardView: View {
     @Binding var showingAchievements: Bool
+    @ObservedObject var authManager: AuthManager
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    private var workouts: [Workout] {
+        guard let user = authManager.currentUser else { return [] }
+        return (user.workouts?.allObjects as? [Workout])?.sorted { 
+            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) 
+        } ?? []
+    }
+    
+    private var recentUnlockedAchievements: [GymAchievement] {
+        let calendar = Calendar.current
+        let totalWorkouts = workouts.count
+        
+        // Подсчитываем статистику (упрощенная версия из AchievementsView)
+        var totalSets = 0
+        var totalReps = 0
+        var totalWeight = 0.0
+        var consecutiveDays = 0
+        var maxConsecutiveDays = 0
+        
+        var lastWorkoutDate: Date?
+        var currentStreak = 0
+        
+        for workout in workouts.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }) {
+            if let details = workout.details?.allObjects as? [WorkoutDetail] {
+                for detail in details {
+                    totalSets += Int(detail.sets)
+                    totalReps += Int(detail.sets) * Int(detail.reps)
+                    totalWeight += detail.weight * Double(detail.sets) * Double(detail.reps)
+                }
+            }
+            
+            // Подсчет последовательных дней
+            if let workoutDate = workout.date {
+                let workoutDay = calendar.startOfDay(for: workoutDate)
+                
+                if let lastDate = lastWorkoutDate {
+                    let lastDay = calendar.startOfDay(for: lastDate)
+                    let daysBetween = calendar.dateComponents([.day], from: workoutDay, to: lastDay).day ?? 0
+                    
+                    if daysBetween == 1 {
+                        currentStreak += 1
+                    } else if daysBetween > 1 {
+                        currentStreak = 0
+                    }
+                } else {
+                    currentStreak = 1
+                }
+                
+                lastWorkoutDate = workoutDate
+                maxConsecutiveDays = max(maxConsecutiveDays, currentStreak)
+            }
+        }
+        
+        let allAchievements = [
+            GymAchievement(
+                id: "first_workout",
+                title: "Первая тренировка",
+                description: "Создайте свою первую тренировку",
+                icon: "play.circle.fill",
+                color: .green,
+                isUnlocked: totalWorkouts >= 1,
+                progress: min(totalWorkouts, 1),
+                maxProgress: 1
+            ),
+            GymAchievement(
+                id: "five_workouts",
+                title: "Начало пути",
+                description: "Проведите 5 тренировок",
+                icon: "5.circle.fill",
+                color: .blue,
+                isUnlocked: totalWorkouts >= 5,
+                progress: min(totalWorkouts, 5),
+                maxProgress: 5
+            ),
+            GymAchievement(
+                id: "ten_workouts",
+                title: "Регулярность",
+                description: "Проведите 10 тренировок",
+                icon: "10.circle.fill",
+                color: .purple,
+                isUnlocked: totalWorkouts >= 10,
+                progress: min(totalWorkouts, 10),
+                maxProgress: 10
+            ),
+            GymAchievement(
+                id: "hundred_sets",
+                title: "Сотня подходов",
+                description: "Выполните 100 подходов",
+                icon: "repeat.circle.fill",
+                color: .orange,
+                isUnlocked: totalSets >= 100,
+                progress: min(totalSets, 100),
+                maxProgress: 100
+            ),
+            GymAchievement(
+                id: "heavy_lifter",
+                title: "Тяжеловес",
+                description: "Наберите 50 000 кг суммарно",
+                icon: "scalemass.fill",
+                color: .brown,
+                isUnlocked: totalWeight >= 50000.0,
+                progress: min(Int(totalWeight), 50000),
+                maxProgress: 50000
+            )
+        ]
+        
+        // Возвращаем последние 3 открытых достижения
+        return Array(allAchievements.filter { $0.isUnlocked }.prefix(3))
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -698,33 +828,61 @@ struct AchievementsCardView: View {
                 }
             }
             
-            HStack(spacing: 12) {
-                AchievementBadgeCardView(
-                    icon: "flame.fill",
-                    title: "Первая тренировка",
-                    isUnlocked: true,
-                    color: .orange
-                )
-                
-                AchievementBadgeCardView(
-                    icon: "calendar",
-                    title: "Неделя тренировок",
-                    isUnlocked: false,
-                    color: .blue
-                )
-                
-                AchievementBadgeCardView(
-                    icon: "trophy.fill",
-                    title: "100 подходов",
-                    isUnlocked: false,
-                    color: .yellow
-                )
+            if recentUnlockedAchievements.isEmpty {
+                // Если нет открытых достижений, показываем заглушку
+                HStack(spacing: 12) {
+                    AchievementBadgeCardView(
+                        icon: "lock.fill",
+                        title: "Заблокировано",
+                        isUnlocked: false,
+                        color: .gray
+                    )
+                    
+                    AchievementBadgeCardView(
+                        icon: "lock.fill",
+                        title: "Заблокировано",
+                        isUnlocked: false,
+                        color: .gray
+                    )
+                    
+                    AchievementBadgeCardView(
+                        icon: "lock.fill",
+                        title: "Заблокировано",
+                        isUnlocked: false,
+                        color: .gray
+                    )
+                }
+            } else {
+                HStack(spacing: 12) {
+                    ForEach(Array(recentUnlockedAchievements.enumerated()), id: \.element.id) { index, achievement in
+                        AchievementBadgeCardView(
+                            icon: achievement.icon,
+                            title: achievement.title,
+                            isUnlocked: achievement.isUnlocked,
+                            color: achievement.color
+                        )
+                    }
+                    
+                    // Дополняем до 3 элементов пустыми карточками если нужно
+                    ForEach(recentUnlockedAchievements.count..<3, id: \.self) { _ in
+                        AchievementBadgeCardView(
+                            icon: "lock.fill",
+                            title: "Заблокировано",
+                            isUnlocked: false,
+                            color: .gray
+                        )
+                    }
+                }
             }
         }
         .padding(20)
         .background(ThemeManager.shared.cardBackgroundColor)  // Gray on dark
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -758,6 +916,17 @@ struct AchievementBadgeCardView: View {
                 .fill(isUnlocked ? color.opacity(0.05) : ThemeManager.shared.cardBackgroundColor.opacity(0.3))  // Use card color for consistency
         )
         .opacity(isUnlocked ? 1.0 : 0.6)
+    }
+}
+
+// MARK: - Helper Functions
+private func formatNumber(_ value: Double) -> String {
+    if value >= 1000000 {
+        return String(format: "%.1fM", value / 1000000)
+    } else if value >= 1000 {
+        return String(format: "%.0fK", value / 1000)
+    } else {
+        return String(format: "%.0f", value)
     }
 }
 

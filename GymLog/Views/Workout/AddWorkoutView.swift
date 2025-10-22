@@ -235,20 +235,18 @@ struct AddWorkoutView: View {
                     workout = existingWorkout
                     workout.notes = notes.isEmpty ? nil : notes
                 } else {
-                    workout = DataManager.shared.createWorkout(
-                        date: workoutDate,
-                        notes: notes.isEmpty ? nil : notes,
-                        user: user,
-                        context: viewContext
-                    )
+                    workout = Workout(context: viewContext)
+                    workout.id = UUID()
+                    workout.date = workoutDate
+                    workout.notes = notes.isEmpty ? nil : notes
+                    workout.user = user
                 }
             } catch {
-                workout = DataManager.shared.createWorkout(
-                    date: workoutDate,
-                    notes: notes.isEmpty ? nil : notes,
-                    user: user,
-                    context: viewContext
-                )
+                workout = Workout(context: viewContext)
+                workout.id = UUID()
+                workout.date = workoutDate
+                workout.notes = notes.isEmpty ? nil : notes
+                workout.user = user
             }
             
             do {

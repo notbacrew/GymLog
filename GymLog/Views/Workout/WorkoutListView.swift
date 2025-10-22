@@ -384,7 +384,11 @@ struct WorkoutCardView: View {
         .padding(20)
         .background(ThemeManager.shared.cardBackgroundColor)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 4)
     }
 }
 
