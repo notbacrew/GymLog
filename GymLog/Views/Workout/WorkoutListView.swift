@@ -15,13 +15,18 @@ struct WorkoutListView: View {
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Workout.date, ascending: false)],
         animation: .default)
-    private var workouts: FetchedResults<Workout>
+    private var allWorkouts: FetchedResults<Workout>
     
     @State private var showingAddWorkout = false
     @State private var searchText = ""
     @State private var selectedPeriod: Constants.FilterPeriod = .all
     @State private var selectedCategory: String = "Все"
     @State private var showingFilters = false
+    
+    private var workouts: [Workout] {
+        guard let user = authManager.currentUser else { return [] }
+        return allWorkouts.filter { $0.user == user }
+    }
     
     private var categories: [String] {
         var cats = ["Все"]

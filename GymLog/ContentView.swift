@@ -1,18 +1,13 @@
-//
-//  ContentView.swift
-//  GymLog
-//
-//  Created by maksimchernukha on 25.09.2025.
-//
-
 import SwiftUI
 import CoreData
 
 struct ContentView: View {
     @ObservedObject var authManager: AuthManager
+    @EnvironmentObject var toastManager: ToastManager
     
     var body: some View {
-        TabView {
+        ZStack {
+            TabView {
             HomeView(authManager: authManager)
                 .tabItem {
                     Image(systemName: "house.fill")
@@ -42,7 +37,24 @@ struct ContentView: View {
                     Image(systemName: "person.circle")
                     Text("Профиль")
                 }
+            }
         }
+        .overlay(
+            // Toast уведомление сверху экрана
+            GeometryReader { geometry in
+                VStack {
+                    HStack {
+                        Spacer()
+                        ToastView(message: toastManager.message, isShowing: $toastManager.isShowing)
+                        Spacer()
+                    }
+                    .padding(.top, geometry.safeAreaInsets.top + 16)
+                    Spacer()
+                }
+            }
+            .allowsHitTesting(false), // Позволяет нажатиям проходить сквозь overlay
+            alignment: .top
+        )
     }
 }
 
@@ -51,4 +63,5 @@ struct ContentView: View {
     let authManager = AuthManager(context: context)
     return ContentView(authManager: authManager)
         .environment(\.managedObjectContext, context)
+        .environmentObject(ToastManager())
 }

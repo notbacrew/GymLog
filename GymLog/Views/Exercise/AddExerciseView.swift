@@ -13,6 +13,7 @@ struct AddExerciseView: View {
     @ObservedObject var authManager: AuthManager
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var toastManager: ToastManager
     
     @State private var name = ""
     @State private var selectedCategory = ""
@@ -115,6 +116,11 @@ struct AddExerciseView: View {
             do {
                 try viewContext.save()
                 dismiss()
+                
+                // Показываем уведомление на главном экране
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    toastManager.show(message: "Упражнение добавлено")
+                }
             } catch {
                 let nsError = error as NSError
                 fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
@@ -128,4 +134,5 @@ struct AddExerciseView: View {
     let authManager = AuthManager(context: context)
     return AddExerciseView(authManager: authManager)
         .environment(\.managedObjectContext, context)
+        .environmentObject(ToastManager())
 }

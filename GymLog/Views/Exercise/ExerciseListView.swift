@@ -12,11 +12,14 @@ struct ExerciseListView: View {
     @ObservedObject var authManager: AuthManager
     @Environment(\.managedObjectContext) private var viewContext
     
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Exercise.name, ascending: true)],
+        animation: .default)
+    private var allExercises: FetchedResults<Exercise>
+    
     private var exercises: [Exercise] {
         guard let user = authManager.currentUser else { return [] }
-        return (user.exercises?.allObjects as? [Exercise])?.sorted { 
-            ($0.name ?? "") < ($1.name ?? "") 
-        } ?? []
+        return allExercises.filter { $0.user == user }
     }
     
     @State private var showingAddExercise = false

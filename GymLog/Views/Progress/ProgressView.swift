@@ -55,9 +55,8 @@ struct ProgressStatsView: View {
                     
                     // Личные рекорды (PR)
                     PRListView(workouts: Array(workouts), period: selectedPeriod, authManager: authManager)
-                    
-                    // Тепловая карта активности
-                    ActivityHeatmapView(workouts: Array(workouts), period: selectedPeriod)
+
+                    // УДАЛЕНО: ActivityHeatmapView - тепловая карта активности по дням
                 }
                 .padding(Constants.Layout.padding)
             }
@@ -822,73 +821,6 @@ struct PersonalRecordRowView: View {
     }
 }
 
-// MARK: - Activity Heatmap (простая сетка)
-struct ActivityHeatmapView: View {
-    let workouts: [Workout]
-    let period: ProgressStatsView.TimePeriod
-    
-    private var days: [Date: Int] {
-        let filtered = workouts.filterBy(period: period)
-        var map: [Date: Int] = [:]
-        let cal = Calendar.current
-        for w in filtered {
-            let day = cal.startOfDay(for: w.date ?? Date())
-            var score = 0
-            if let details = w.details?.allObjects as? [WorkoutDetail] {
-                for d in details {
-                    score += Int(d.sets * d.reps)
-                }
-            }
-            map[day, default: 0] += score
-        }
-        return map
-    }
-    
-    private var daysSequence: [Date] {
-        let cal = Calendar.current
-        let now = Date()
-        let count: Int
-        switch period {
-        case .week: count = 6
-        case .month: count = 29
-        case .year: count = 179 // Возвращаем как было раньше
-        }
-        return stride(from: 0, through: count, by: 1).compactMap {
-            cal.date(byAdding: .day, value: -$0, to: cal.startOfDay(for: now))
-        }.reversed()
-    }
-    
-    private var maxScore: Int {
-        max(days.values.max() ?? 1, 1)
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Активность по дням")
-                .font(.headline)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(12), spacing: 2), count: period == .year ? 20 : (period == .month ? 10 : 7)), spacing: 2) {
-                ForEach(Array(daysSequence), id: \.self) { day in
-                    let score = days[day, default: 0]
-                    let intensity = Double(score) / Double(maxScore)
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Constants.Colors.primary.opacity(0.15 + 0.6 * intensity))
-                        .frame(width: 12, height: 12)
-                        .accessibilityLabel(Text("\(day, formatter: DateFormatter.short) — активность: \(score)"))
-                }
-            }
-        }
-        .padding(Constants.Layout.padding)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(Constants.Layout.cornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)
-                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 4)
-    }
-}
-
 // MARK: - Helpers
 private extension Array where Element == Workout {
     func filterBy(period: ProgressStatsView.TimePeriod) -> [Workout] {
@@ -925,5 +857,3 @@ private func formatNumber(_ value: Double) -> String {
     return ProgressStatsView(authManager: authManager)
         .environment(\.managedObjectContext, context)
 }
-
-

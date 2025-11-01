@@ -11,7 +11,7 @@ import CoreData
 struct SettingsView: View {
     @ObservedObject var authManager: AuthManager
     @Environment(\.managedObjectContext) private var viewContext
-    @StateObject private var themeManager = ThemeManager()
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showingClearDataAlert = false
     @State private var showingSampleDataAlert = false
     @State private var showingExportSheet = false
@@ -151,7 +151,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingThemePicker) {
             NavigationView {
-                ThemePickerView(themeManager: themeManager)
+                ThemePickerView()
                     .navigationTitle("Выбор темы")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {

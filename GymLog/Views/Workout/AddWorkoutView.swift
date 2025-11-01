@@ -12,12 +12,12 @@ struct AddWorkoutView: View {
     @ObservedObject var authManager: AuthManager
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var toastManager: ToastManager
     
     @State private var workoutDate = Date()
     @State private var notes = ""
     @State private var selectedExercises: Set<Exercise> = []
     @State private var showingExercisePicker = false
-    @State private var showingAddWorkoutDetail = false
     @State private var selectedExerciseForDetail: Exercise?
     
     @FetchRequest private var workoutDetails: FetchedResults<WorkoutDetail>
@@ -59,7 +59,6 @@ struct AddWorkoutView: View {
                     ForEach(currentWorkoutDetails, id: \.id) { detail in
                             Button(action: {
                                 selectedExerciseForDetail = detail.exercise
-                                showingAddWorkoutDetail = true
                             }) {
                             HStack {
                                 if let imageData = detail.exercise?.image,
@@ -118,7 +117,6 @@ struct AddWorkoutView: View {
                         if !currentWorkoutDetails.contains(where: { $0.exercise == exercise }) {
                             Button(action: {
                                 selectedExerciseForDetail = exercise
-                                showingAddWorkoutDetail = true
                             }) {
                                 HStack {
                                     if let imageData = exercise.image,
@@ -190,18 +188,18 @@ struct AddWorkoutView: View {
             .sheet(isPresented: $showingExercisePicker) {
                 ExercisePickerView(authManager: authManager, selectedExercises: $selectedExercises)
             }
-            .sheet(isPresented: $showingAddWorkoutDetail) {
-                if let exercise = selectedExerciseForDetail {
-                    AddWorkoutDetailView(
-                        authManager: authManager,
-                        exercise: exercise,
-                        workoutDate: workoutDate,
-                        onExerciseAdded: {
-                            // Удаляем упражнение из selectedExercises после добавления деталей
-                            selectedExercises.remove(exercise)
-                        }
-                    )
-                }
+            .sheet(item: $selectedExerciseForDetail) { exercise in
+                AddWorkoutDetailView(
+                    authManager: authManager,
+                    exercise: exercise,
+                    workoutDate: workoutDate,
+                    onExerciseAdded: {
+                        // Удаляем упражнение из selectedExercises после добавления деталей
+                        selectedExercises.remove(exercise)
+                        // Сбрасываем выбранное упражнение
+                        selectedExerciseForDetail = nil
+                    }
+                )
             }
         }
     }
@@ -252,6 +250,11 @@ struct AddWorkoutView: View {
             do {
                 try viewContext.save()
                 dismiss()
+                
+                // Показываем уведомление на главном экране
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    toastManager.show(message: "Тренировка добавлена")
+                }
             } catch {
                 print("Error saving workout: \(error)")
                 // Восстанавливаем объект в случае ошибки
@@ -343,4 +346,5 @@ struct ExercisePickerView: View {
     let authManager = AuthManager(context: context)
     return AddWorkoutView(authManager: authManager)
         .environment(\.managedObjectContext, context)
+        .environmentObject(ToastManager())
 }

@@ -18,19 +18,21 @@ class ThemeManager: ObservableObject {
         }
     }
     
-    init() {
+    private init() {
         loadTheme()
     }
     
     func setTheme(_ theme: AppTheme) {
         appThemeRaw = theme.rawValue
-        switch theme {
-        case .system:
-            colorScheme = nil
-        case .light:
-            colorScheme = .light
-        case .dark:
-            colorScheme = .dark
+        DispatchQueue.main.async {
+            switch theme {
+            case .system:
+                self.colorScheme = nil
+            case .light:
+                self.colorScheme = .light
+            case .dark:
+                self.colorScheme = .dark
+            }
         }
     }
     
@@ -55,35 +57,80 @@ class ThemeManager: ObservableObject {
     
     // Custom colors - gray for dark
     var backgroundColor: Color {
-        if currentTheme == .dark {
-            return Color.black  // Pure black for dark theme backgrounds
+        // Определяем тему более точно
+        let isDarkMode: Bool
+        if let colorScheme = colorScheme {
+            isDarkMode = colorScheme == .dark
+        } else {
+            // Для системной темы проверяем системные настройки
+            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
         }
-        return Color(.systemBackground)
+        
+        if isDarkMode {
+            return Color.black  // Чистый черный для фона темной темы
+        }
+        return Color(.systemBackground)  // Системный фон для светлой темы
     }
     
     var cardBackgroundColor: Color {
-        if currentTheme == .dark {
-            return Color(.secondarySystemGroupedBackground)  // Match Progress page grouped style for dark
+        // Определяем тему более точно
+        let isDarkMode: Bool
+        if let colorScheme = colorScheme {
+            isDarkMode = colorScheme == .dark
+        } else {
+            // Для системной темы проверяем системные настройки
+            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
         }
-        return Color(.systemBackground)
+        
+        if isDarkMode {
+            return Color(.secondarySystemGroupedBackground)  // Серый фон для темной темы
+        }
+        return Color(.systemBackground)  // Белый фон для светлой темы
     }
     
     var primaryTextColor: Color {
-        if currentTheme == .dark {
+        // Определяем тему более точно
+        let isDarkMode: Bool
+        if let colorScheme = colorScheme {
+            isDarkMode = colorScheme == .dark
+        } else {
+            // Для системной темы проверяем системные настройки
+            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+        }
+        
+        if isDarkMode {
             return .white
         }
         return .primary
     }
     
     var secondaryTextColor: Color {
-        if currentTheme == .dark {
+        // Определяем тему более точно
+        let isDarkMode: Bool
+        if let colorScheme = colorScheme {
+            isDarkMode = colorScheme == .dark
+        } else {
+            // Для системной темы проверяем системные настройки
+            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+        }
+        
+        if isDarkMode {
             return Color.gray.opacity(0.8)
         }
         return .secondary
     }
     
     var accentColor: Color {
-        if currentTheme == .dark {
+        // Определяем тему более точно
+        let isDarkMode: Bool
+        if let colorScheme = colorScheme {
+            isDarkMode = colorScheme == .dark
+        } else {
+            // Для системной темы проверяем системные настройки
+            isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+        }
+        
+        if isDarkMode {
             return Color(red: 0.5, green: 0.5, blue: 0.5)
         }
         return Color.blue
@@ -135,7 +182,7 @@ extension Notification.Name {
 
 // Replace the existing ThemePickerView with this improved version
 struct ThemePickerView: View {
-    @ObservedObject var themeManager: ThemeManager
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

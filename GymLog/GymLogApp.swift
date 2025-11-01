@@ -11,7 +11,8 @@ import CoreData
 @main
 struct GymLogApp: App {
     let persistenceController = PersistenceController.shared
-    @StateObject private var themeManager = ThemeManager()
+    @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var toastManager = ToastManager()
     @StateObject private var authManager: AuthManager
 
     init() {
@@ -24,9 +25,13 @@ struct GymLogApp: App {
             if authManager.isAuthenticated {
                 ContentView(authManager: authManager)
                     .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                    .environmentObject(themeManager)
+                    .environmentObject(toastManager)
                     .preferredColorScheme(themeManager.colorScheme)
             } else {
                 WelcomeView(authManager: authManager)
+                    .environmentObject(themeManager)
+                    .environmentObject(toastManager)
                     .preferredColorScheme(themeManager.colorScheme)
             }
         }
